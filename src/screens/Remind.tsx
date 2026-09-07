@@ -6,7 +6,7 @@ import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
 export function Remind() {
-  const { reminders, week, toggleReminder } = useAppState()
+  const { reminders, week, toggleReminder, subscribed } = useAppState()
   const fixtures = reminders
     .map((r) => fixtureById(r.fixtureId, week.fixtures))
     .filter((f): f is NonNullable<typeof f> => Boolean(f))
@@ -28,7 +28,7 @@ export function Remind() {
         <div className="stack">
           {fixtures.map((fixture) => (
             <div key={fixture.id}>
-              <GameRow fixture={fixture} />
+              <GameRow fixture={fixture} subscribed={subscribed} />
               <div className="row-gap" style={{ marginTop: 8 }}>
                 <Link className="cta" to={`/game/${fixture.id}`}>
                   Open game

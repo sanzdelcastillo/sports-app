@@ -8,23 +8,37 @@ interface Props {
 
 export function TeamCrest({ team, size = 'md' }: Props) {
   const [failed, setFailed] = useState<'primary' | 'all' | null>(null)
-  const src =
-    failed === 'primary' ? team?.espnLogoUrl : failed === 'all' ? undefined : team?.badgeUrl
+  const [loaded, setLoaded] = useState(false)
+  const [crestKey, setCrestKey] = useState(team?.id)
+
+  if (team?.id !== crestKey) {
+    setCrestKey(team?.id)
+    setFailed(null)
+    setLoaded(false)
+  }
+
+  const espn = team?.espnLogoUrl
+  const sportsDb = team?.badgeUrl
+  const primary = espn ?? sportsDb
+  const secondary = espn && sportsDb && espn !== sportsDb ? sportsDb : undefined
+  const src = failed === 'primary' ? secondary : failed === 'all' ? undefined : primary
 
   return (
-    <div className={`crest ${size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : ''}`} aria-hidden={!team}>
+    <div className={`crest ${size}`} aria-hidden={!team}>
       {src ? (
         <img
           src={src}
           alt=""
+          className={loaded ? 'is-loaded' : ''}
+          onLoad={() => setLoaded(true)}
           onError={() => {
-            if (failed === null && team?.espnLogoUrl) setFailed('primary')
+            setLoaded(false)
+            if (failed === null && secondary) setFailed('primary')
             else setFailed('all')
           }}
         />
-      ) : (
-        <span className="crest-fallback">{team?.shortName ?? '?'}</span>
-      )}
+      ) : null}
+      {!loaded ? <span className="crest-fallback">{team?.shortName ?? '?'}</span> : null}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
-import { FeaturedGame, GameRow } from '../components/GameCard'
+import { FeaturedGame, featuredKicker, GameCardSkeleton, GameRow } from '../components/GameCard'
 import { formatKickoff } from '../lib/time'
 import { useAppState } from '../stores/AppState'
 
@@ -44,67 +44,77 @@ export function MyWeek() {
     <div>
       <AppHeader />
       <section className="hero" aria-label="My Week">
-        <div className="kicker">Stadium night</div>
-        <h1>My Week</h1>
-        <span className="pill">Live • ~7 days ET</span>
+        <div className="hero-top">
+          <div>
+            <div className="kicker">Stadium night</div>
+            <h1>My Week</h1>
+          </div>
+          <span className="pill">Live · ~7 days ET</span>
+        </div>
         <div className="hero-meta">
-          {follows.length} followed teams • {sourceLabel} •{' '}
+          {follows.length} followed teams · {sourceLabel} ·{' '}
           <button className="text-btn" type="button" onClick={() => void refresh()}>
             Refresh
           </button>
         </div>
       </section>
 
-      {loading && week.fixtures.length === 0 ? (
-        <>
-          <div className="skeleton" />
-          <div className="skeleton" />
-        </>
-      ) : null}
-
-      {week.error ? <p className="source-note">{week.error}</p> : null}
-
       {follows.length === 0 ? (
         <EmptyState
           title="Follow clubs to fill your week"
           body="My Week only lists games for teams you follow. Seed Julio’s 11 from Follows."
           actionTo="/follows"
-          actionLabel="Choose follows"
+          actionLabel="Go to Follows"
         />
-      ) : week.fixtures.length === 0 ? (
-        <EmptyState
-          title="No followed-team fixtures in this window"
-          body="Nothing live or upcoming for your clubs in the next ~7 days. Try Refresh, or add another club."
-          actionTo="/follows"
-          actionLabel="Manage follows"
-        />
+      ) : loading && week.fixtures.length === 0 ? (
+        <div className="stack" aria-busy="true" aria-label="Loading this week">
+          <GameCardSkeleton />
+          <GameCardSkeleton />
+          <GameCardSkeleton />
+        </div>
       ) : (
         <>
-          <div className="section-label">Next up</div>
-          {featured ? <FeaturedGame fixture={featured} subscribed={subscribed} /> : null}
-          {upcomingGroups.map(([day, fixtures]) => (
-            <section key={`up-${day}`}>
-              <div className="date-head">{day}</div>
-              {fixtures.map((fixture) => (
-                <GameRow key={fixture.id} fixture={fixture} />
-              ))}
-            </section>
-          ))}
-          {recentGroups.length > 0 ? (
+          {week.error ? <p className="source-note">{week.error}</p> : null}
+          {week.fixtures.length === 0 ? (
+            <EmptyState
+              title="No followed-team fixtures in this window"
+              body="Nothing live or upcoming for your clubs in the next ~7 days. Try Refresh, or add another club."
+              actionTo="/follows"
+              actionLabel="Go to Follows"
+            />
+          ) : (
             <>
-              <div className="section-label" style={{ marginTop: 22 }}>
-                Earlier this week
-              </div>
-              {recentGroups.map(([day, fixtures]) => (
-                <section key={`re-${day}`}>
+              {featured ? (
+                <>
+                  <div className="section-label">{featuredKicker(featured)}</div>
+                  <FeaturedGame fixture={featured} subscribed={subscribed} />
+                </>
+              ) : null}
+              {upcomingGroups.map(([day, fixtures]) => (
+                <section key={`up-${day}`}>
                   <div className="date-head">{day}</div>
                   {fixtures.map((fixture) => (
-                    <GameRow key={fixture.id} fixture={fixture} />
+                    <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />
                   ))}
                 </section>
               ))}
+              {recentGroups.length > 0 ? (
+                <>
+                  <div className="section-label" style={{ marginTop: 22 }}>
+                    Earlier this week
+                  </div>
+                  {recentGroups.map(([day, fixtures]) => (
+                    <section key={`re-${day}`}>
+                      <div className="date-head">{day}</div>
+                      {fixtures.map((fixture) => (
+                        <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />
+                      ))}
+                    </section>
+                  ))}
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </>
       )}
 
