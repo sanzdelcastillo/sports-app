@@ -1,4 +1,4 @@
-export type WatchAvailability = 'live' | 'replay' | 'unknown'
+export type WatchAvailability = 'live' | 'replay' | 'upcoming' | 'unknown'
 
 export type FixtureStatus = 'scheduled' | 'live' | 'final' | 'unknown'
 

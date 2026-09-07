@@ -1,5 +1,5 @@
 import { primaryDestination } from '../data/watch'
-import type { DestinationId, Fixture } from '../domain/types'
+import type { DestinationId, Fixture, WatchAvailability } from '../domain/types'
 import { ExternalIcon } from './icons'
 
 export function WatchCta({
@@ -31,9 +31,17 @@ export function WatchCta({
 export function AvailabilityBadge({
   availability,
 }: {
-  availability: 'live' | 'replay' | 'unknown'
+  availability: WatchAvailability
 }) {
   const label =
-    availability === 'live' ? 'Live' : availability === 'replay' ? 'Replay' : 'Unknown'
-  return <span className={`badge ${availability === 'unknown' ? 'ghost' : ''}`}>{label}</span>
+    availability === 'live'
+      ? 'Live'
+      : availability === 'replay'
+        ? 'Replay'
+        : availability === 'upcoming'
+          ? 'Upcoming'
+          : 'Unknown'
+  const tone =
+    availability === 'live' ? 'live' : availability === 'unknown' || availability === 'upcoming' ? 'ghost' : ''
+  return <span className={`badge ${tone}`.trim()}>{label}</span>
 }

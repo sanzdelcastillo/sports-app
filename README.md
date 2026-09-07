@@ -8,7 +8,7 @@ Mobile-first planner for soccer fans. Production v1 answers three questions only
 
 ## Product lock (non-negotiable)
 
-**This app never streams games and never embeds live video.** There is no player, no rights acquisition, and no ESPN-like in-app playback. Where-to-watch is honest: **Live · Replay · Unknown**. Destinations (Apple TV / MLS Season Pass, ESPN+, Peacock, Paramount+, CBS, beIN, etc.) open in a new tab. Prefer services the user marks as already subscribed.
+**This app never streams games and never embeds live video.** There is no player, no rights acquisition, and no ESPN-like in-app playback. Where-to-watch destination badges: **Upcoming · Live · Replay · Unknown** (Live only while the match is in progress; the match ● LIVE pill is separate). Destinations (Apple TV / MLS Season Pass, ESPN+, Peacock, Paramount+, beIN) open in a new tab. Prefer services the user marks as already subscribed. TheSportsDB + bundled seed for v1; ESPN scoreboard proxy later.
 
 No monetization or pricing UI in v1.
 

@@ -34,7 +34,7 @@ export const PROVIDERS: Provider[] = [
     name: 'NBC / USA Network',
     shortName: 'NBC',
     url: 'https://www.nbcsports.com/soccer',
-    blurb: 'Select Premier League windows on NBC linear.',
+    blurb: 'Secondary — select Premier League linear windows. Not in the default Julio map.',
   },
   {
     id: 'espn-plus',
@@ -55,7 +55,7 @@ export const PROVIDERS: Provider[] = [
     name: 'CBS Sports',
     shortName: 'CBS Sports',
     url: 'https://www.cbssports.com/soccer/',
-    blurb: 'Select Champions League and Serie A windows.',
+    blurb: 'Secondary — select UCL / Serie A linear windows. Not in the default Julio map.',
   },
   {
     id: 'bein',
@@ -66,30 +66,42 @@ export const PROVIDERS: Provider[] = [
   },
 ]
 
+export const JULIO_OWNED_IDS: DestinationId[] = [
+  'apple-tv-mls',
+  'espn-plus',
+  'peacock',
+  'paramount-plus',
+  'bein',
+]
+
 export const PROVIDER_BY_ID = Object.fromEntries(PROVIDERS.map((p) => [p.id, p])) as Record<
   DestinationId,
   Provider
 >
 
 /**
- * US-market mapping. Rights change — treat as guidance, not a guarantee.
- * Availability is Live for upcoming/in-progress, Replay after full time.
+ * Default US map = Julio owned set only.
+ * Apple TV / MLS Season Pass, ESPN+, Peacock, Paramount+, beIN.
+ * NBC / CBS stay on the Watch screen as secondary marks, not default destinations.
+ * Rights change — treat as guidance, not a guarantee.
  */
 const LEAGUE_PROVIDERS: Partial<Record<LeagueId, DestinationId[]>> = {
   mls: ['apple-tv-mls'],
-  epl: ['peacock', 'nbc'],
+  epl: ['peacock'],
   laliga: ['espn-plus'],
-  seriea: ['paramount-plus', 'cbs-sports'],
+  seriea: ['paramount-plus'],
   ligue1: ['bein'],
-  ucl: ['paramount-plus', 'cbs-sports'],
+  ucl: ['paramount-plus'],
   bundesliga: ['espn-plus'],
   eredivisie: ['espn-plus'],
   primeira: ['paramount-plus'],
 }
 
+/** Destination badge — not the match ● LIVE pill. Live only when the match is in progress. */
 export function availabilityFor(status: Fixture['status']): WatchAvailability {
   if (status === 'final') return 'replay'
-  if (status === 'live' || status === 'scheduled') return 'live'
+  if (status === 'live') return 'live'
+  if (status === 'scheduled') return 'upcoming'
   return 'unknown'
 }
 
