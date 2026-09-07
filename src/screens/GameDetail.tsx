@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
+import { Scoreboard } from '../components/GameCard'
 import { ClockIcon } from '../components/icons'
-import { TeamCrest } from '../components/TeamCrest'
-import { AvailabilityBadge, WatchCta } from '../components/WatchCta'
+import { AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { destinationsForFixture, primaryDestination } from '../data/watch'
-import { scoreLabel } from '../lib/status'
-import { formatKickoff, formatVenueDate } from '../lib/time'
+import { formatVenueDate } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { newsForFixture } from '../services/news'
 import { useAppState } from '../stores/AppState'
@@ -24,7 +23,6 @@ export function GameDetail() {
 
   const home = fixture ? getTeam(fixture.homeTeamId) : undefined
   const away = fixture ? getTeam(fixture.awayTeamId) : undefined
-  const kick = fixture ? formatKickoff(fixture.kickoffUtc) : null
   const league = fixture ? LEAGUES[fixture.leagueId] : null
   const dests = fixture ? destinationsForFixture(fixture, subscribed) : []
   const primary = fixture ? primaryDestination(fixture, subscribed) : null
@@ -33,7 +31,7 @@ export function GameDetail() {
     [fixture],
   )
 
-  if (!fixture || !home || !away || !kick || !league || !primary) {
+  if (!fixture || !home || !away || !league || !primary) {
     return (
       <div>
         <AppHeader accent="orange" />
@@ -61,25 +59,7 @@ export function GameDetail() {
         <div className="match-head" style={{ justifyContent: 'center' }}>
           {league.shortName}
         </div>
-        <div className="matchup">
-          <div className="side">
-            <TeamCrest team={home} size="lg" />
-            <div className="name">{home.name}</div>
-            {fixture.homeRecord ? <div className="record">{fixture.homeRecord}</div> : null}
-          </div>
-          <div className="kick">
-            <div className="time">{kick.time}</div>
-            <div className="scores">
-              <span>{scoreLabel(fixture.homeScore, fixture.status)}</span>
-              <span>{scoreLabel(fixture.awayScore, fixture.status)}</span>
-            </div>
-          </div>
-          <div className="side">
-            <TeamCrest team={away} size="lg" />
-            <div className="name">{away.name}</div>
-            {fixture.awayRecord ? <div className="record">{fixture.awayRecord}</div> : null}
-          </div>
-        </div>
+        <Scoreboard fixture={fixture} size="lg" names="full" />
         <p className="venue">
           {fixture.venue} · {formatVenueDate(fixture.kickoffUtc)}
         </p>
@@ -96,9 +76,7 @@ export function GameDetail() {
           </button>
         </div>
         <div className="badges" style={{ marginTop: 12 }}>
-          {fixture.status === 'live' ? <span className="badge live">● LIVE</span> : null}
-          {fixture.status === 'final' ? <span className="badge">Final</span> : null}
-          {fixture.status === 'scheduled' ? <span className="badge ghost">Upcoming</span> : null}
+          <AvailabilityBadge availability={primary.availability} />
           <span className="badge ghost">
             on {primary.shortName}
             {fixture.mustWatch ? ' · Must-watch' : ''}
@@ -120,21 +98,25 @@ export function GameDetail() {
 
       {tab === 'watch' ? (
         <section>
-          <h2 className="date-head">Where to watch</h2>
+          <h2 className="display-head">Where to watch</h2>
           <p className="disclaimer">Info only — opens the provider site. No in-app video.</p>
           <div className="stack">
             {dests.map((dest) => (
-              <a key={dest.id} className="card watch-card" href={dest.url} target="_blank" rel="noreferrer">
-                <div>
-                  <h3>{dest.name}</h3>
-                  <p>{dest.note}</p>
+              <div key={dest.id} className="card watch-panel">
+                <div className="badges">
+                  <AvailabilityBadge availability={dest.availability} />
+                  <OwnedChip owned={isOwnedDestination(dest.id, subscribed)} />
                 </div>
-                <AvailabilityBadge availability={dest.availability} />
-              </a>
+                <h3>{dest.name}</h3>
+                <p className="watch-app">App: {dest.shortName}</p>
+                <a className="deep-link" href={dest.url} target="_blank" rel="noreferrer">
+                  Open provider site ↗
+                </a>
+              </div>
             ))}
           </div>
           <p className="source-note">
-            Prefer a service you already pay for? Mark it on{' '}
+            Prefer a service you already use? Mark it on{' '}
             <Link to="/watch" style={{ textDecoration: 'underline' }}>
               Watch destinations
             </Link>
@@ -149,7 +131,7 @@ export function GameDetail() {
           <p className="disclaimer">
             v1 stores a local reminder only. This app does not send push notifications and never starts a stream.
           </p>
-          <button type="button" className="cta wide" onClick={() => toggleReminder(fixture.id)}>
+          <button type="button" className="cta glass-pill wide" onClick={() => toggleReminder(fixture.id)}>
             {hasReminder(fixture.id) ? 'Remove reminder' : 'Remind me'}
           </button>
         </section>

@@ -14,9 +14,9 @@ export function Watch() {
       </Link>
       <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>Watch destinations</h1>
       <p className="disclaimer">
-        Mark services you already subscribe to. We prefer those when listing Upcoming / Live / Replay / Unknown
-        destinations. Julio’s default map is Apple TV, ESPN+, Peacock, Paramount+, and beIN. No pricing, no checkout, no
-        in-app playback.
+        Mark services you already use. We prefer those when listing Upcoming / Live / Replay / Unknown destinations.
+        Julio’s default map is Apple TV, ESPN+, Peacock, Paramount+, and beIN. No pricing, no checkout, no in-app
+        playback.
       </p>
       <div className="date-head">Julio’s default map</div>
       <div className="stack">
@@ -61,7 +61,7 @@ function ProviderRow({
         <p>{provider.blurb}</p>
       </div>
       <button type="button" className={`toggle${on ? ' on' : ''}`} aria-pressed={on} onClick={onToggle}>
-        {on ? 'Subscribed' : 'I have this'}
+        {on ? 'In your apps' : 'Not in your list'}
       </button>
     </article>
   )

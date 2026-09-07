@@ -5,7 +5,97 @@ import type { DestinationId, Fixture } from '../domain/types'
 import { scoreLabel } from '../lib/status'
 import { formatKickoff } from '../lib/time'
 import { TeamCrest } from './TeamCrest'
-import { WatchCta } from './WatchCta'
+import { MatchStatusBadge, WatchCta } from './WatchCta'
+
+function clockLabel(fixture: Fixture, time: string): string {
+  if (fixture.status === 'final') {
+    return fixture.statusDetail && fixture.statusDetail !== 'FT' ? fixture.statusDetail : 'FT'
+  }
+  if (fixture.status === 'live') {
+    const detail = fixture.statusDetail
+    if (detail && detail.toLowerCase() !== 'live') return detail
+    return time
+  }
+  return time
+}
+
+export function featuredKicker(fixture: Fixture): string {
+  const kick = formatKickoff(fixture.kickoffUtc)
+  const league = LEAGUES[fixture.leagueId]
+  const prefix = fixture.status === 'live' ? 'NOW' : 'NEXT UP'
+  return `${prefix} · ${kick.day} · ${league.shortName}`
+}
+
+export function Scoreboard({
+  fixture,
+  size = 'sm',
+  names = 'short',
+}: {
+  fixture: Fixture
+  size?: 'sm' | 'lg'
+  names?: 'short' | 'full'
+}) {
+  const home = getTeam(fixture.homeTeamId)
+  const away = getTeam(fixture.awayTeamId)
+  const kick = formatKickoff(fixture.kickoffUtc)
+  const crestSize = size === 'lg' ? 'lg' : 'sm'
+  const showRecords = names === 'full' || Boolean(fixture.awayRecord || fixture.homeRecord)
+
+  return (
+    <div className={`scoreboard ${size}`}>
+      <div className="scoreboard-clock-row">
+        <span className="score">{scoreLabel(fixture.awayScore, fixture.status)}</span>
+        <span className="clock">{clockLabel(fixture, kick.time)}</span>
+        <span className="score">{scoreLabel(fixture.homeScore, fixture.status)}</span>
+      </div>
+      <div className="scoreboard-teams">
+        <div className="side">
+          <TeamCrest team={away} size={crestSize} />
+          <div className={names === 'full' ? 'name' : 'abbr'}>
+            {names === 'full' ? away?.name : away?.shortName}
+          </div>
+          {showRecords && fixture.awayRecord ? <div className="record">{fixture.awayRecord}</div> : null}
+        </div>
+        <div className="side">
+          <TeamCrest team={home} size={crestSize} />
+          <div className={names === 'full' ? 'name' : 'abbr'}>
+            {names === 'full' ? home?.name : home?.shortName}
+          </div>
+          {showRecords && fixture.homeRecord ? <div className="record">{fixture.homeRecord}</div> : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CardRail({ fixture }: { fixture: Fixture }) {
+  const league = LEAGUES[fixture.leagueId]
+  return (
+    <div className="card-rail">
+      <span className="badge ghost">{league.shortName}</span>
+      <MatchStatusBadge status={fixture.status} />
+    </div>
+  )
+}
+
+function CardActions({
+  fixture,
+  subscribed,
+  compact,
+}: {
+  fixture: Fixture
+  subscribed: DestinationId[]
+  compact?: boolean
+}) {
+  return (
+    <div className="row-actions">
+      <div className="badges">
+        {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
+      </div>
+      <WatchCta fixture={fixture} subscribed={subscribed} compact={compact} />
+    </div>
+  )
+}
 
 export function FeaturedGame({
   fixture,
@@ -16,78 +106,53 @@ export function FeaturedGame({
 }) {
   const home = getTeam(fixture.homeTeamId)
   const away = getTeam(fixture.awayTeamId)
-  const kick = formatKickoff(fixture.kickoffUtc)
-  const league = LEAGUES[fixture.leagueId]
 
   return (
     <article className="card card-featured">
-      <div className="match-head">
-        <span>
-          Next up • {kick.day} • {league.shortName}
-        </span>
-      </div>
-      <Link to={`/game/${fixture.id}`} className="matchup" aria-label={`${home?.name} vs ${away?.name}`}>
-        <div className="side">
-          <TeamCrest team={home} />
-          <div className="abbr">{home?.shortName}</div>
-        </div>
-        <div className="kick">
-          <div className="time">{kick.time}</div>
-          <div className="scores" aria-hidden="true">
-            <span>{scoreLabel(fixture.homeScore, fixture.status)}</span>
-            <span>{scoreLabel(fixture.awayScore, fixture.status)}</span>
-          </div>
-        </div>
-        <div className="side">
-          <TeamCrest team={away} />
-          <div className="abbr">{away?.shortName}</div>
-        </div>
+      <Link to={`/game/${fixture.id}`} className="game-card-main" aria-label={`${away?.name} vs ${home?.name}`}>
+        <CardRail fixture={fixture} />
+        <Scoreboard fixture={fixture} size="sm" names="short" />
       </Link>
-      <div className="row-actions">
-        <div className="badges">
-          {fixture.status === 'live' ? <span className="badge live">● LIVE</span> : null}
-          {fixture.status === 'final' ? <span className="badge">Final</span> : null}
-          {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
-        </div>
-        <WatchCta fixture={fixture} subscribed={subscribed} />
-      </div>
+      <CardActions fixture={fixture} subscribed={subscribed} compact />
     </article>
   )
 }
 
-export function GameRow({ fixture }: { fixture: Fixture }) {
+export function GameRow({
+  fixture,
+  subscribed,
+}: {
+  fixture: Fixture
+  subscribed: DestinationId[]
+}) {
   const home = getTeam(fixture.homeTeamId)
   const away = getTeam(fixture.awayTeamId)
-  const kick = formatKickoff(fixture.kickoffUtc)
-  const league = LEAGUES[fixture.leagueId]
 
   return (
-    <Link to={`/game/${fixture.id}`} className="card game-row">
-      <div className="badges">
-        <span className="badge ghost">{league.shortName}</span>
-        {fixture.status === 'live' ? <span className="badge live">● LIVE</span> : null}
-        {fixture.status === 'final' ? <span className="badge">Final</span> : null}
-        {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
+    <article className="card game-row">
+      <Link to={`/game/${fixture.id}`} className="game-card-main" aria-label={`${away?.name} vs ${home?.name}`}>
+        <CardRail fixture={fixture} />
+        <Scoreboard fixture={fixture} size="sm" names="short" />
+      </Link>
+      <CardActions fixture={fixture} subscribed={subscribed} compact />
+    </article>
+  )
+}
+
+export function GameCardSkeleton() {
+  return (
+    <div className="card skeleton-card" aria-hidden="true">
+      <div className="skeleton-line rail" />
+      <div className="skeleton-scoreboard">
+        <div className="skeleton-line score" />
+        <div className="skeleton-line clock" />
+        <div className="skeleton-line score" />
       </div>
-      <div className="matchup">
-        <div className="side">
-          <TeamCrest team={home} size="sm" />
-          <div className="abbr">{home?.shortName}</div>
-        </div>
-        <div className="kick">
-          <div className="time" style={{ fontSize: 16 }}>
-            {kick.time}
-          </div>
-          <div className="scores" style={{ fontSize: 18 }}>
-            <span>{scoreLabel(fixture.homeScore, fixture.status)}</span>
-            <span>{scoreLabel(fixture.awayScore, fixture.status)}</span>
-          </div>
-        </div>
-        <div className="side">
-          <TeamCrest team={away} size="sm" />
-          <div className="abbr">{away?.shortName}</div>
-        </div>
+      <div className="skeleton-crests">
+        <div className="skeleton-crest" />
+        <div className="skeleton-crest" />
       </div>
-    </Link>
+      <div className="skeleton-line cta" />
+    </div>
   )
 }
