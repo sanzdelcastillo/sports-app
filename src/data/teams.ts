@@ -491,7 +491,7 @@ export const TEAMS: Team[] = [
   {
     id: 'slb',
     name: 'Slovan Bratislava',
-    shortName: 'SLB',
+    shortName: 'SLO',
     leagueId: 'other',
     country: 'Slovakia',
     stadium: 'Tehelné pole',

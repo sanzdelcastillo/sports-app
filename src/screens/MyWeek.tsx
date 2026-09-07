@@ -8,19 +8,29 @@ import { useAppState } from '../stores/AppState'
 export function MyWeek() {
   const { follows, week, loading, refresh, subscribed } = useAppState()
 
-  const { featured, groups } = useMemo(() => {
+  const { featured, upcomingGroups, recentGroups } = useMemo(() => {
     const upcoming = week.fixtures.filter((f) => f.status !== 'final')
+    const recent = week.fixtures.filter((f) => f.status === 'final')
     const featuredGame =
       upcoming.find((f) => f.status === 'live') ?? upcoming[0] ?? week.fixtures[0]
-    const rest = week.fixtures.filter((f) => f.id !== featuredGame?.id)
-    const map = new Map<string, typeof rest>()
-    for (const fixture of rest) {
-      const key = formatKickoff(fixture.kickoffUtc).day
-      const list = map.get(key) ?? []
-      list.push(fixture)
-      map.set(key, list)
+    const upcomingRest = upcoming.filter((f) => f.id !== featuredGame?.id)
+
+    const groupByDay = (fixtures: typeof upcoming) => {
+      const map = new Map<string, typeof fixtures>()
+      for (const fixture of fixtures) {
+        const key = formatKickoff(fixture.kickoffUtc).day
+        const list = map.get(key) ?? []
+        list.push(fixture)
+        map.set(key, list)
+      }
+      return [...map.entries()]
     }
-    return { featured: featuredGame, groups: [...map.entries()] }
+
+    return {
+      featured: featuredGame,
+      upcomingGroups: groupByDay(upcomingRest),
+      recentGroups: groupByDay(recent),
+    }
   }, [week.fixtures])
 
   const sourceLabel =
@@ -72,14 +82,29 @@ export function MyWeek() {
         <>
           <div className="section-label">Next up</div>
           {featured ? <FeaturedGame fixture={featured} subscribed={subscribed} /> : null}
-          {groups.map(([day, fixtures]) => (
-            <section key={day}>
+          {upcomingGroups.map(([day, fixtures]) => (
+            <section key={`up-${day}`}>
               <div className="date-head">{day}</div>
               {fixtures.map((fixture) => (
                 <GameRow key={fixture.id} fixture={fixture} />
               ))}
             </section>
           ))}
+          {recentGroups.length > 0 ? (
+            <>
+              <div className="section-label" style={{ marginTop: 22 }}>
+                Earlier this week
+              </div>
+              {recentGroups.map(([day, fixtures]) => (
+                <section key={`re-${day}`}>
+                  <div className="date-head">{day}</div>
+                  {fixtures.map((fixture) => (
+                    <GameRow key={fixture.id} fixture={fixture} />
+                  ))}
+                </section>
+              ))}
+            </>
+          ) : null}
         </>
       )}
 
