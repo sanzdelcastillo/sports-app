@@ -17,6 +17,8 @@ export interface LiveUpdate {
   awayScore: number | null
   status: Fixture['status']
   statusDetail: string
+  liveMinute?: number
+  livePeriod?: string
   updatedAt?: string
 }
 
@@ -44,12 +46,16 @@ export function mapLive(raw: RawLive[]): LiveUpdate[] {
     .map((r) => {
       const status = (r.strStatus ?? '').trim()
       const s = status.toUpperCase()
+      const progress = (r.strProgress ?? '').trim()
+      const minute = /^\d+/.test(progress) ? Number(progress.match(/^\d+/)![0]) : undefined
       return {
         fixtureId: r.idEvent,
         homeScore: num(r.intHomeScore),
         awayScore: num(r.intAwayScore),
         status: FINAL.has(s) ? 'final' : NOT_STARTED.has(s) ? 'scheduled' : 'live',
-        statusDetail: detailFor(status, (r.strProgress ?? '').trim()),
+        statusDetail: detailFor(status, progress),
+        liveMinute: minute,
+        livePeriod: s || undefined,
         updatedAt: r.updated ?? undefined,
       }
     })
@@ -69,11 +75,20 @@ export function applyLive(fixtures: Fixture[], updates: LiveUpdate[]): Fixture[]
   const next = fixtures.map((f) => {
     const u = byId.get(f.id)
     if (!u) return f
-    if (f.status === u.status && f.homeScore === u.homeScore && f.awayScore === u.awayScore && f.statusDetail === u.statusDetail) {
+    if (
+      f.status === u.status &&
+      f.homeScore === u.homeScore &&
+      f.awayScore === u.awayScore &&
+      f.statusDetail === u.statusDetail &&
+      f.livePeriod === u.livePeriod
+    ) {
       return f
     }
     changed = true
-    return { ...f, status: u.status, homeScore: u.homeScore, awayScore: u.awayScore, statusDetail: u.statusDetail }
+    return { ...f,
+      liveMinute: u.liveMinute,
+      liveMinuteAt: u.liveMinute !== undefined && u.liveMinute !== f.liveMinute ? new Date().toISOString() : (f.liveMinuteAt ?? new Date().toISOString()),
+      livePeriod: u.livePeriod, status: u.status, homeScore: u.homeScore, awayScore: u.awayScore, statusDetail: u.statusDetail }
   })
   return changed ? next : fixtures
 }

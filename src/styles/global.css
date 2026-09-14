@@ -2132,3 +2132,176 @@ h3 {
   font-weight: 600;
   font-size: 13px;
 }
+
+/* ---------- Live clock ---------- */
+
+.live-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.live-clock.running .live-clock-text {
+  color: var(--amber);
+}
+
+.featured-clock.live-clock .live-clock-text {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Match panel ---------- */
+
+.timeline {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 1fr 64px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft, #E6E1D3);
+}
+
+.tl-row:last-child {
+  border-bottom: 0;
+}
+
+.tl-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tl-row.home .tl-side:first-child {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.tl-player {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.05;
+}
+
+.tl-detail {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+
+.tl-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tl-glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tl-glyph.yellow {
+  color: #E5A62E;
+}
+
+.tl-glyph.red {
+  color: var(--red);
+}
+
+.tl-glyph.sub {
+  color: var(--pitch);
+  font-weight: 700;
+}
+
+.tl-glyph.var {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tl-glyph.missed-penalty {
+  color: var(--ink-muted);
+}
+
+.tl-minute {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.tl-row.goal .tl-player,
+.tl-row.penalty .tl-player,
+.tl-row.own-goal .tl-player {
+  font-weight: 700;
+}
+
+.stat-heads {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-val {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+}
+
+.stat-mid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.stat-track {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--line);
+  gap: 2px;
+}
+
+.stat-fill.home {
+  background: var(--pitch-deep);
+}
+
+.stat-fill.away {
+  background: var(--amber);
+}

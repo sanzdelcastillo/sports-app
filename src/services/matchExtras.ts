@@ -1,6 +1,7 @@
 import { getLeague } from '../data/leagues'
 import type { Fixture, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
+import { getTeam } from '../data/teams'
 import { getJson, V1, V2 } from './theSportsDb'
 
 const BASE = V1
@@ -268,4 +269,128 @@ export async function fetchHighlight(fixture: Fixture): Promise<Highlight | null
   const result: Highlight = { url, fetchedAt: new Date().toISOString() }
   writeJson(key, result)
   return result
+}
+
+/* ---------- Match events (timeline) and stats ---------- */
+
+export type EventKind = 'goal' | 'own-goal' | 'penalty' | 'missed-penalty' | 'yellow' | 'red' | 'sub' | 'var' | 'other'
+
+export interface MatchEvent {
+  minute: number
+  side: 'home' | 'away'
+  kind: EventKind
+  player: string
+  detail?: string
+}
+
+export interface MatchStat {
+  label: string
+  home: number
+  away: number
+  percent?: boolean
+}
+
+export interface MatchReport {
+  events: MatchEvent[]
+  stats: MatchStat[]
+  fetchedAt: string
+}
+
+interface RawTimeline {
+  intTime?: string | null
+  strTimeline?: string | null
+  strTimelineDetail?: string | null
+  strPlayer?: string | null
+  strAssist?: string | null
+  strHome?: string | null
+  strTeam?: string | null
+  strComment?: string | null
+}
+
+interface RawStat {
+  strStat?: string | null
+  intHome?: string | null
+  intAway?: string | null
+}
+
+const LIVE_REPORT_TTL_MS = 90 * 1000
+const FINAL_REPORT_TTL_MS = 24 * 60 * 60 * 1000
+
+function kindOf(t: RawTimeline): EventKind {
+  const type = (t.strTimeline ?? '').toLowerCase()
+  const detail = (t.strTimelineDetail ?? '').toLowerCase()
+  if (type === 'goal') {
+    if (detail.includes('missed')) return 'missed-penalty'
+    if (detail.includes('own')) return 'own-goal'
+    if (detail.includes('penalty')) return 'penalty'
+    return 'goal'
+  }
+  if (type === 'card') return detail.includes('red') ? 'red' : 'yellow'
+  if (type.startsWith('subst')) return 'sub'
+  if (type === 'var') return 'var'
+  return 'other'
+}
+
+/** Which side an event belongs to: the team name is more reliable than the feed's home flag. */
+function sideOf(t: RawTimeline, homeName: string, awayName: string): 'home' | 'away' {
+  const team = (t.strTeam ?? '').trim().toLowerCase()
+  if (team && team === homeName.toLowerCase()) return 'home'
+  if (team && team === awayName.toLowerCase()) return 'away'
+  return (t.strHome ?? '').toLowerCase() === 'yes' ? 'home' : 'away'
+}
+
+export function mapTimeline(raw: RawTimeline[], homeName: string, awayName: string): MatchEvent[] {
+  return raw
+    .filter((t) => t.strPlayer && t.intTime)
+    .map<MatchEvent>((t) => {
+      const kind = kindOf(t)
+      const assist = (t.strAssist ?? '').trim()
+      const comment = (t.strComment ?? '').trim()
+      let detail: string | undefined
+      if (kind === 'sub') detail = assist ? `for ${assist}` : undefined
+      else if (kind === 'goal' || kind === 'penalty') detail = assist ? `assist ${assist}` : t.strTimelineDetail?.includes('Penalty') ? 'penalty' : undefined
+      else if (kind === 'yellow' || kind === 'red') detail = comment && comment !== 'NULL' ? comment : undefined
+      else if (kind === 'missed-penalty') detail = 'penalty missed'
+      else if (kind === 'own-goal') detail = 'own goal'
+      return { minute: Number(t.intTime), side: sideOf(t, homeName, awayName), kind, player: (t.strPlayer ?? '').trim(), detail }
+    })
+    .sort((a, b) => a.minute - b.minute)
+}
+
+const STAT_ORDER = ['Ball Possession', 'Total Shots', 'Shots on Goal', 'Shots off Goal', 'Blocked Shots', 'Corner Kicks', 'Fouls', 'Offsides', 'Yellow Cards', 'Red Cards', 'Goalkeeper Saves', 'Total passes', 'Passes accurate', 'Passes %']
+
+export function mapStats(raw: RawStat[]): MatchStat[] {
+  const rows = raw
+    .filter((r) => r.strStat)
+    .map<MatchStat>((r) => {
+      const label = (r.strStat ?? '').trim()
+      const parse = (v?: string | null) => Number(String(v ?? '0').replace('%', '')) || 0
+      return { label, home: parse(r.intHome), away: parse(r.intAway), percent: label.toLowerCase().includes('possession') || label.includes('%') }
+    })
+  return rows.sort((a, b) => {
+    const ia = STAT_ORDER.indexOf(a.label)
+    const ib = STAT_ORDER.indexOf(b.label)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+}
+
+/** Goals, cards, subs and the stat sheet for one game. Live games refresh every ~90s; finished ones are kept. */
+export async function fetchMatchReport(fixture: Fixture): Promise<MatchReport | null> {
+  const key = `sfp.report.${fixture.id}`
+  const cached = readJson<MatchReport | null>(key, null)
+  const ttl = fixture.status === 'final' ? FINAL_REPORT_TTL_MS : LIVE_REPORT_TTL_MS
+  if (cached && fresh(cached.fetchedAt, ttl)) return cached
+  const home = getTeam(fixture.homeTeamId)?.name ?? ''
+  const away = getTeam(fixture.awayTeamId)?.name ?? ''
+  const [timeline, stats] = await Promise.all([
+    getJson<{ timeline: RawTimeline[] | null }>(`${BASE}/lookuptimeline?id=${fixture.id}`),
+    getJson<{ eventstats: RawStat[] | null }>(`${BASE}/lookupeventstats?id=${fixture.id}`),
+  ])
+  const report: MatchReport = {
+    events: mapTimeline(timeline.timeline ?? [], home, away),
+    stats: mapStats(stats.eventstats ?? []),
+    fetchedAt: new Date().toISOString(),
+  }
+  writeJson(key, report)
+  return report
 }

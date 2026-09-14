@@ -6,6 +6,7 @@ import { scoreLabel } from '../lib/status'
 import { formatKickoff } from '../lib/time'
 import { useAppState } from '../stores/AppState'
 import { BookmarkIcon } from './icons'
+import { LiveClock } from './LiveClock'
 import { TeamCrest } from './TeamCrest'
 import { AccessChip, WatchCta } from './WatchCta'
 
@@ -16,11 +17,6 @@ function splitTime(time: string): { clock: string; rest: string } {
   return { clock: time.slice(0, i), rest: time.slice(i + 1) }
 }
 
-function liveMinute(fixture: Fixture): string {
-  const detail = fixture.statusDetail
-  if (detail && detail.toLowerCase() !== 'live') return detail
-  return 'Live'
-}
 
 function useMasked(fixture: Fixture): boolean {
   const { hideScores, isSavedForLater } = useAppState()
@@ -75,8 +71,7 @@ function When({ fixture, masked }: { fixture: Fixture; masked: boolean }) {
   if (fixture.status === 'live') {
     return (
       <div className="when when-live">
-        <span className="pulse-dot" aria-hidden="true" />
-        <span className="when-clock">{liveMinute(fixture)}</span>
+        <LiveClock fixture={fixture} className="when-clock" />
         <span className="when-rest">live</span>
       </div>
     )
@@ -193,10 +188,7 @@ export function FeaturedGame({ fixture, subscribed }: { fixture: Fixture; subscr
         <div className="featured-grid">
           <div className="featured-when">
             {fixture.status === 'live' ? (
-              <>
-                <span className="pulse-dot" aria-hidden="true" />
-                <span className="featured-clock">{liveMinute(fixture)}</span>
-              </>
+              <LiveClock fixture={fixture} className="featured-clock" />
             ) : fixture.status === 'final' ? (
               <span className="featured-clock">{masked ? 'Played' : 'FT'}</span>
             ) : (
@@ -236,13 +228,13 @@ export function Scoreboard({
   const showRecords = names === 'full' || Boolean(fixture.awayRecord || fixture.homeRecord)
 
   const centre =
-    fixture.status === 'live'
-      ? liveMinute(fixture)
-      : fixture.status === 'final'
-        ? masked
-          ? 'Played'
-          : 'Full time'
-        : kick.time
+    fixture.status === 'live' ? (
+      <LiveClock fixture={fixture} />
+    ) : fixture.status === 'final' ? (
+      masked ? 'Played' : 'Full time'
+    ) : (
+      kick.time
+    )
 
   return (
     <div className={`scoreboard ${size}`}>
@@ -250,10 +242,7 @@ export function Scoreboard({
         <span className={`score${masked ? ' masked' : ''}`} aria-label={masked ? 'Score hidden' : undefined}>
           {masked ? '·' : scoreLabel(fixture.homeScore, fixture.status)}
         </span>
-        <span className="clock">
-          {fixture.status === 'live' ? <span className="pulse-dot" aria-hidden="true" /> : null}
-          {centre}
-        </span>
+        <span className="clock">{centre}</span>
         <span className={`score${masked ? ' masked' : ''}`} aria-label={masked ? 'Score hidden' : undefined}>
           {masked ? '·' : scoreLabel(fixture.awayScore, fixture.status)}
         </span>

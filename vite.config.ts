@@ -8,10 +8,9 @@ import react from '@vitejs/plugin-react'
  */
 /** Local stand-in for api/news.js so the News tab works in `npm run dev` / `preview`. */
 function newsDevMiddleware(): Plugin {
-  const handle = async (_req: IncomingMessage, res: ServerResponse) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse, file: string) => {
     try {
-      // @ts-expect-error plain JS serverless function, typed at the call site
-      const mod = (await import('./api/news.js')) as { default: (req: unknown, res: unknown) => Promise<void> }
+      const mod = (await import(file)) as { default: (req: unknown, res: unknown) => Promise<void> | void }
       const shim = {
         setHeader: (k: string, v: string) => res.setHeader(k, v),
         status: (code: number) => {
@@ -19,9 +18,10 @@ function newsDevMiddleware(): Plugin {
           return shim
         },
         json: (body: unknown) => res.end(JSON.stringify(body)),
+        send: (body: string) => res.end(body),
         end: () => res.end(),
       }
-      await mod.default({ method: 'GET' }, shim)
+      await mod.default({ method: 'GET', url: req.url ?? '/' }, shim)
     } catch (error) {
       res.statusCode = 502
       res.end(JSON.stringify({ error: String(error) }))
@@ -30,10 +30,12 @@ function newsDevMiddleware(): Plugin {
   return {
     name: 'pitchside-news-dev',
     configureServer(server) {
-      server.middlewares.use('/api/news', (req, res) => void handle(req, res))
+      server.middlewares.use('/api/news', (req, res) => void handle(req, res, './api/news.js'))
+      server.middlewares.use('/api/ics', (req, res) => void handle(req, res, './api/ics.js'))
     },
     configurePreviewServer(server) {
-      server.middlewares.use('/api/news', (req, res) => void handle(req, res))
+      server.middlewares.use('/api/news', (req, res) => void handle(req, res, './api/news.js'))
+      server.middlewares.use('/api/ics', (req, res) => void handle(req, res, './api/ics.js'))
     },
   }
 }

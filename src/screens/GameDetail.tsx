@@ -4,10 +4,11 @@ import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { ChangeBadge, SaveLaterButton, Scoreboard } from '../components/GameCard'
 import { CalendarPlusIcon } from '../components/icons'
-import { HighlightLink, LineupsPanel, TablePanel, TvListingsPanel } from '../components/MatchExtras'
+import { HighlightLink, LineupsPanel, MatchPanel, TablePanel, TvListingsPanel } from '../components/MatchExtras'
 import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
+import type { Fixture } from '../domain/types'
 import { destinationsForFixture, primaryDestination, RIGHTS_REVIEWED_ON } from '../data/watch'
 import { buildIcs, downloadIcs } from '../lib/ics'
 import { formatVenueDate } from '../lib/time'
@@ -15,13 +16,14 @@ import { openExternal } from '../native/external'
 import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
-type Tab = 'watch' | 'lineups' | 'table' | 'calendar'
+type Tab = 'match' | 'watch' | 'lineups' | 'table' | 'calendar'
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: Tab; label: string; when?: (f: Fixture) => boolean }[] = [
+  { id: 'match', label: 'Match', when: (f) => f.status !== 'scheduled' },
   { id: 'watch', label: 'Watch' },
   { id: 'lineups', label: 'Lineups' },
   { id: 'table', label: 'Table' },
-  { id: 'calendar', label: 'Calendar' },
+  { id: 'calendar', label: 'Calendar', when: (f) => f.status !== 'final' },
 ]
 
 const reviewedShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
@@ -32,13 +34,17 @@ export function GameDetail() {
   const { id = '' } = useParams()
   const { week, subscribed } = useAppState()
   const fixture = fixtureById(id, week.fixtures)
-  const [tab, setTab] = useState<Tab>('watch')
+  const [tab, setTab] = useState<Tab | null>(null)
 
   const home = fixture ? getTeam(fixture.homeTeamId) : undefined
   const away = fixture ? getTeam(fixture.awayTeamId) : undefined
   const league = fixture ? getLeague(fixture.leagueId) : null
   const dests = fixture ? destinationsForFixture(fixture, subscribed) : []
   const primary = fixture ? primaryDestination(fixture, subscribed) : null
+
+  const visibleTabs = fixture ? TABS.filter((t) => !t.when || t.when(fixture)) : TABS
+  const defaultTab: Tab = fixture && fixture.status !== 'scheduled' ? 'match' : 'watch'
+  const activeTab: Tab = tab && visibleTabs.some((t) => t.id === tab) ? tab : defaultTab
 
   if (!fixture || !home || !away || !league || !primary) {
     return (
@@ -85,14 +91,14 @@ export function GameDetail() {
         <HighlightLink fixture={fixture} />
       </article>
 
-      <div className="tabs four" role="tablist" aria-label="Game details">
-        {TABS.map((t) => (
+      <div className={`tabs ${visibleTabs.length === 5 ? 'five' : 'four'}`} role="tablist" aria-label="Game details">
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"
             className="tab"
             role="tab"
-            aria-selected={tab === t.id}
+            aria-selected={activeTab === t.id}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -100,7 +106,13 @@ export function GameDetail() {
         ))}
       </div>
 
-      {tab === 'watch' ? (
+      {activeTab === 'match' ? (
+        <section className="card">
+          <MatchPanel fixture={fixture} />
+        </section>
+      ) : null}
+
+      {activeTab === 'watch' ? (
         <section>
           <h2 className="display-head">Where to watch</h2>
           <p className="disclaimer">Info only — opens the provider site. No in-app video.</p>
@@ -148,21 +160,21 @@ export function GameDetail() {
         </section>
       ) : null}
 
-      {tab === 'lineups' ? (
+      {activeTab === 'lineups' ? (
         <section>
           <h2 className="display-head">Lineups</h2>
           <LineupsPanel fixture={fixture} />
         </section>
       ) : null}
 
-      {tab === 'table' ? (
+      {activeTab === 'table' ? (
         <section>
           <h2 className="display-head">Table and form</h2>
           <TablePanel fixture={fixture} />
         </section>
       ) : null}
 
-      {tab === 'calendar' ? (
+      {activeTab === 'calendar' ? (
         <section className="card">
           <h2 className="display-head">Add to your calendar</h2>
           <p className="disclaimer">

@@ -125,6 +125,10 @@ export interface Fixture {
   awayRecord?: string
   status: FixtureStatus
   statusDetail?: string
+  /** Live clock: the minute the source last reported, when we saw it, and the period (1H, HT, 2H, ET, PEN). */
+  liveMinute?: number
+  liveMinuteAt?: string
+  livePeriod?: string
   mustWatch?: boolean
   /** Season label from the data source, e.g. "2026-2027" or "2026". */
   season?: string

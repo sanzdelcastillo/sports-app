@@ -4,8 +4,11 @@ import type { Fixture, Team } from '../domain/types'
 import {
   fetchHighlight,
   fetchLineup,
+  fetchMatchReport,
   fetchTable,
   fetchTvListings,
+  type MatchEvent,
+  type MatchStat,
   type LeagueTable,
   type LineupPlayer,
   type MatchLineup,
@@ -325,5 +328,127 @@ export function HighlightLink({ fixture }: { fixture: Fixture }) {
     >
       Watch highlights on YouTube ↗
     </a>
+  )
+}
+
+/* ---------- Match: timeline + stats ---------- */
+
+const EVENT_GLYPH: Record<MatchEvent['kind'], string> = {
+  goal: '⚽',
+  penalty: '⚽',
+  'own-goal': '⚽',
+  'missed-penalty': '✕',
+  yellow: '▮',
+  red: '▮',
+  sub: '⇄',
+  var: 'VAR',
+  other: '•',
+}
+
+function StatBar({ stat }: { stat: MatchStat }) {
+  const total = stat.percent ? 100 : stat.home + stat.away
+  const homePct = total > 0 ? Math.round((stat.home / total) * 100) : 50
+  const fmt = (n: number) => (stat.percent ? `${n}%` : String(n))
+  return (
+    <div className="stat-row">
+      <span className="stat-val">{fmt(stat.home)}</span>
+      <span className="stat-mid">
+        <span className="stat-label">{stat.label}</span>
+        <span className="stat-track" aria-hidden="true">
+          <span className="stat-fill home" style={{ width: `${homePct}%` }} />
+          <span className="stat-fill away" style={{ width: `${100 - homePct}%` }} />
+        </span>
+      </span>
+      <span className="stat-val">{fmt(stat.away)}</span>
+    </div>
+  )
+}
+
+/**
+ * What happened and how it's going: goals, cards, subs down a centre line, then the stat sheet.
+ * Hidden while scores are hidden — every line here is a spoiler.
+ */
+export function MatchPanel({ fixture }: { fixture: Fixture }) {
+  const { hideScores, isSavedForLater } = useAppState()
+  const masked = hideScores || isSavedForLater(fixture.id)
+  const [load, retry] = useLoad(fixture, masked ? async () => null : fetchMatchReport)
+  const home = getTeam(fixture.homeTeamId)
+  const away = getTeam(fixture.awayTeamId)
+
+  // Live games: poll the report on the same cadence as scores.
+  useEffect(() => {
+    if (fixture.status !== 'live' || masked) return
+    const id = window.setInterval(retry, 120_000)
+    return () => window.clearInterval(id)
+  }, [fixture.status, masked, retry])
+
+  if (masked) return <p className="disclaimer">Match events and stats are hidden while scores are hidden.</p>
+  if (load.state === 'loading') return <p className="disclaimer">Loading match events…</p>
+  if (load.state === 'error' && load.busy) return <Busy retry={retry} />
+  if (load.state === 'error' || !load.data) return <p className="disclaimer">Match events are unavailable right now.</p>
+
+  const { events, stats } = load.data
+  const nothingYet = events.length === 0 && stats.length === 0
+
+  return (
+    <div className="match-panel">
+      {nothingYet ? (
+        <p className="disclaimer">
+          {fixture.status === 'live'
+            ? 'No events reported yet. Goals, cards and substitutions appear here as the source logs them.'
+            : 'The source has no event-by-event record for this game. Coverage is deepest in the big European leagues.'}
+        </p>
+      ) : null}
+
+      {events.length > 0 ? (
+        <>
+          <div className="date-head">Events</div>
+          <ol className="timeline" aria-label="Match events">
+            {events.map((e, i) => (
+              <li key={`${e.minute}-${e.player}-${i}`} className={`tl-row ${e.side} ${e.kind}`}>
+                <span className="tl-side">
+                  {e.side === 'home' ? (
+                    <>
+                      <span className="tl-player">{e.player}</span>
+                      {e.detail ? <span className="tl-detail">{e.detail}</span> : null}
+                    </>
+                  ) : null}
+                </span>
+                <span className="tl-mid">
+                  <span className={`tl-glyph ${e.kind}`} aria-label={e.kind}>
+                    {EVENT_GLYPH[e.kind]}
+                  </span>
+                  <span className="tl-minute">{e.minute}'</span>
+                </span>
+                <span className="tl-side">
+                  {e.side === 'away' ? (
+                    <>
+                      <span className="tl-player">{e.player}</span>
+                      {e.detail ? <span className="tl-detail">{e.detail}</span> : null}
+                    </>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </>
+      ) : null}
+
+      {stats.length > 0 ? (
+        <>
+          <div className="date-head">Stats</div>
+          <div className="stat-heads">
+            <span>{home?.shortName ?? 'Home'}</span>
+            <span>{away?.shortName ?? 'Away'}</span>
+          </div>
+          <div className="stats">
+            {stats.map((st) => (
+              <StatBar key={st.label} stat={st} />
+            ))}
+          </div>
+        </>
+      ) : null}
+      <p className="source-note">Events and stats from TheSportsDB{fixture.status === 'live' ? ', refreshed every two minutes' : ''}.</p>
+    </div>
   )
 }

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -15,7 +16,7 @@ import { bootTeams, rememberCustomTeams } from '../services/clubs'
 import { alertsPermitted, cancelAllAlerts, scheduleKickoffAlerts } from '../native/alerts'
 import { isNative } from '../native/platform'
 import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
-import { anyInPlay, applyLive, fetchLiveSoccer } from '../services/livescores'
+import { anyInPlay, applyLive, fetchLiveSoccer, type LiveUpdate } from '../services/livescores'
 
 const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
@@ -135,19 +136,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     void refresh()
   }, [refresh])
 
+  const lastLivePoll = useRef(0)
+  const lastLiveUpdates = useRef<LiveUpdate[]>([])
   // Live scores: poll every two minutes, but only while one of the week's games could be in play.
   useEffect(() => {
     if (liveFeed === 'off' || !anyInPlay(week.fixtures)) return
     let cancelled = false
+    const apply = (updates: LiveUpdate[]) =>
+      setWeek((prev) => {
+        const fixtures = applyLive(prev.fixtures, updates)
+        return fixtures === prev.fixtures ? prev : { ...prev, fixtures }
+      })
+    // A freshly loaded week arrives without live data; re-apply what we last heard before polling again.
+    if (lastLiveUpdates.current.length) apply(lastLiveUpdates.current)
     const tick = async () => {
+      if (Date.now() - lastLivePoll.current < 45_000) return
+      lastLivePoll.current = Date.now()
       try {
         const updates = await fetchLiveSoccer()
         if (cancelled) return
+        lastLiveUpdates.current = updates
         setLiveFeed('on')
-        setWeek((prev) => {
-          const fixtures = applyLive(prev.fixtures, updates)
-          return fixtures === prev.fixtures ? prev : { ...prev, fixtures }
-        })
+        apply(updates)
       } catch (error) {
         if (!cancelled && error instanceof Error && error.name === 'NoPremiumKey') setLiveFeed('off')
       }

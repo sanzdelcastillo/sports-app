@@ -12,7 +12,9 @@ import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
 import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/services/matchExtras'
 import { mapClub } from '../src/services/clubs'
 import { mapEvent } from '../src/services/theSportsDb'
-import { involvesTeam } from '../src/lib/status'
+import { involvesTeam, scoreLabel } from '../src/lib/status'
+import { liveClockLabel } from '../src/components/LiveClock'
+import { mapStats, mapTimeline } from '../src/services/matchExtras'
 import { getLeague, leagueIdFromFollow } from '../src/data/leagues'
 import { leagueForEntry, searchLeagues } from '../src/services/leagues'
 import { followKeywords, isForYou } from '../src/services/news'
@@ -200,6 +202,22 @@ const danishGame = mapEvent({
 } as never)
 expect(danishGame?.leagueId === 'l4340' && danishGame.leagueName === 'Danish Superliga', 'a game from any league carries its real league')
 expect(accessFor(danishGame!, ['peacock']).state === 'unknown', 'no U.S. rights guess for an unmapped league')
+
+console.log('Live clock, scores and match report')
+expect(scoreLabel(null, 'live') === '0' && scoreLabel(null, 'final') === '—' && scoreLabel(null, 'scheduled') === '—', 'live with no score reads 0; unknown finals stay blank')
+const liveFx = { ...cupTie!, status: 'live' as const, liveMinute: 23, livePeriod: '1H', liveMinuteAt: new Date(Date.now() - 95_000).toISOString() }
+expect(liveClockLabel(liveFx).text === '24:35', 'clock counts seconds between feed updates')
+expect(liveClockLabel({ ...liveFx, liveMinute: 44, liveMinuteAt: new Date(Date.now() - 130_000).toISOString() }).text === "45+1'", 'clock stops at the end of the half and shows added time')
+expect(liveClockLabel({ ...liveFx, livePeriod: 'HT' }).text === 'HT', 'half time')
+const tl = mapTimeline([
+  { intTime: '58', strTimeline: 'Goal', strTimelineDetail: 'Normal Goal', strPlayer: 'Bruno', strAssist: 'Rice', strHome: 'No', strTeam: 'Arsenal' },
+  { intTime: '28', strTimeline: 'Card', strTimelineDetail: 'Yellow Card', strPlayer: 'Reinildo', strHome: 'Yes', strTeam: 'Sunderland', strComment: 'Foul' },
+  { intTime: '45', strTimeline: 'subst', strTimelineDetail: 'Substitution 1', strPlayer: 'White', strAssist: 'Timber', strHome: 'No', strTeam: 'Arsenal' },
+], 'Sunderland', 'Arsenal')
+expect(tl.map((e) => e.kind).join(',') === 'yellow,sub,goal', 'timeline sorted by minute with kinds')
+expect(tl[2].side === 'away' && tl[2].detail === 'assist Rice' && tl[1].detail === 'for Timber', 'sides and details')
+const st = mapStats([{ strStat: 'Shots on Goal', intHome: '3', intAway: '5' }, { strStat: 'Ball Possession', intHome: '38%', intAway: '62%' }])
+expect(st[0].label === 'Ball Possession' && st[0].percent && st[0].away === 62, 'possession first, percent parsed')
 
 console.log('News parsing')
 const rss = `<rss><channel><item><title><![CDATA[Arsenal &amp; Chelsea draw]]></title><link>https://x.test/a</link><pubDate>Mon, 14 Sep 2026 11:25:35 GMT</pubDate></item><item><title>No link</title></item></channel></rss>`

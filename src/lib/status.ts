@@ -17,8 +17,10 @@ export function withInferredStatus(fixture: Fixture, now = new Date()): Fixture 
   return { ...fixture, status }
 }
 
+/** Scoreboard digits. A live game with no score yet reads 0, not a blank — nothing is "missing". */
 export function scoreLabel(score: number | null, status: FixtureStatus): string {
-  if (score === null || status === 'scheduled') return '—'
+  if (status === 'scheduled') return '—'
+  if (score === null) return status === 'live' ? '0' : '—'
   return String(score)
 }
 
