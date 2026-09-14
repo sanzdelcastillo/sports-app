@@ -11,7 +11,7 @@ const UPSTREAM = 'https://www.thesportsdb.com/api'
 
 // Only the endpoints the app uses. Anything else is refused so the key can't be used as a general relay.
 const ALLOW_V1 = new Set(['eventsnext', 'eventslast', 'eventsnextleague', 'eventspastleague', 'lookuplineup', 'lookuptable', 'lookuptv', 'lookupevent'])
-const ALLOW_V2_PREFIX = ['livescore/', 'lookup/event_tv/', 'lookup/event_highlights/', 'list/teams/', 'schedule/next/team/', 'schedule/previous/team/']
+const ALLOW_V2_PREFIX = ['livescore/', 'lookup/event_tv/', 'lookup/event_highlights/', 'list/teams/', 'all/leagues', 'schedule/next/team/', 'schedule/previous/team/']
 
 /** Edge cache per endpoint, in seconds. Live scores stay short; tables can sit for a while. */
 function cacheFor(version, rest) {
@@ -21,6 +21,7 @@ function cacheFor(version, rest) {
   if (rest.startsWith('lookuptv')) return 's-maxage=600, stale-while-revalidate=3600'
   if (rest.startsWith('lookup/event_highlights')) return 's-maxage=3600, stale-while-revalidate=86400'
   if (rest.startsWith('list/teams')) return 's-maxage=86400, stale-while-revalidate=604800'
+  if (rest.startsWith('all/leagues')) return 's-maxage=86400, stale-while-revalidate=604800'
   return 's-maxage=60, stale-while-revalidate=300'
 }
 

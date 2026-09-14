@@ -5,7 +5,7 @@ import { involvesTeam, isMustWatch, withInferredStatus } from '../lib/status'
 import { readJson, writeJson } from '../lib/storage'
 import { isInWindow, parseUtc, weekWindow } from '../lib/time'
 import { fetchLeagueEvents, fetchTeamEvents } from './theSportsDb'
-import { LEAGUES, leagueIdFromFollow } from '../data/leagues'
+import { getLeague, leagueIdFromFollow } from '../data/leagues'
 
 const CACHE_KEY = 'sfp.lastGoodWeek.v1'
 const CACHE_KEEP_DAYS = 21
@@ -137,7 +137,7 @@ export async function loadFollowedWeek(follows: string[], teamsToFetch: string[]
     const targets = teamsToFetch
       .map((id) => {
         const league = leagueIdFromFollow(id)
-        if (league) return { id, sportsDbId: LEAGUES[league].sportsDbId, kind: 'league' as const }
+        if (league) return { id, sportsDbId: getLeague(league).sportsDbId, kind: 'league' as const }
         return { id, sportsDbId: getTeam(id)?.sportsDbId, kind: 'team' as const }
       })
       .filter((t): t is { id: string; sportsDbId: string; kind: 'league' | 'team' } => Boolean(t.sportsDbId))

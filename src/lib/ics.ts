@@ -1,4 +1,4 @@
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { accessFor, RIGHTS_REVIEWED_ON } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
@@ -40,7 +40,7 @@ function whereLine(fixture: Fixture, subscribed: DestinationId[]): string {
 export function fixtureToVevent(fixture: Fixture, subscribed: DestinationId[], now = new Date()): string {
   const home = getTeam(fixture.homeTeamId)?.name ?? fixture.homeTeamId
   const away = getTeam(fixture.awayTeamId)?.name ?? fixture.awayTeamId
-  const league = LEAGUES[fixture.leagueId]?.shortName ?? fixture.leagueName
+  const league = getLeague(fixture.leagueId).shortName ?? fixture.leagueName
   const start = parseUtc(fixture.kickoffUtc)
   const description = [whereLine(fixture, subscribed), `Where-to-watch reviewed ${RIGHTS_REVIEWED_ON}. Confirm on the provider.`].join(
     '\n',

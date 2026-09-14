@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { TeamCrest } from '../components/TeamCrest'
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { accessFor } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
@@ -104,7 +104,7 @@ function ConflictLine({
           {home?.shortName} vs {away?.shortName}
         </h3>
         <p>
-          {kick.time} · {LEAGUES[fixture.leagueId].shortName}
+          {kick.time} · {getLeague(fixture.leagueId).shortName}
         </p>
         <span className={`badge ${role === 'live' ? 'plan-live' : 'plan-later'}`}>{hint}</span>
       </div>

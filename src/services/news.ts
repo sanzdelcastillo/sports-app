@@ -1,4 +1,4 @@
-import { LEAGUES, leagueIdFromFollow } from '../data/leagues'
+import { getLeague, leagueIdFromFollow } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import type { LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
@@ -38,7 +38,7 @@ export function followKeywords(follows: string[]): string[] {
   for (const id of follows) {
     const league = leagueIdFromFollow(id)
     if (league) {
-      const l = LEAGUES[league as LeagueId]
+      const l = getLeague(league as LeagueId)
       words.push(l.name, l.shortName)
       continue
     }

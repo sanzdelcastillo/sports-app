@@ -1,6 +1,6 @@
-import type { League, LeagueId } from '../domain/types'
+import type { KnownLeagueId, League, LeagueId } from '../domain/types'
 
-export const LEAGUES: Record<LeagueId, League> = {
+export const LEAGUES: Record<KnownLeagueId, League> = {
   mls: {
     id: 'mls',
     name: 'Major League Soccer',
@@ -77,6 +77,13 @@ export const LEAGUES: Record<LeagueId, League> = {
   dfbpokal: { id: 'dfbpokal', name: 'DFB-Pokal', shortName: 'DFB-Pokal', accent: '#000000', sportsDbId: '4485' },
   leaguescup: { id: 'leaguescup', name: 'Leagues Cup', shortName: 'Leagues Cup', accent: '#FF6A00', sportsDbId: '5281' },
   usopencup: { id: 'usopencup', name: 'U.S. Open Cup', shortName: 'Open Cup', accent: '#0B3D91', sportsDbId: '5199' },
+  // More leagues with U.S. rights worth mapping by hand
+  ligamx: { id: 'ligamx', name: 'Liga MX', shortName: 'Liga MX', accent: '#0B7A3B', sportsDbId: '4350' },
+  brasileirao: { id: 'brasileirao', name: 'Brasileirão Série A', shortName: 'Brasileirão', accent: '#0A7C3E', sportsDbId: '4351' },
+  spfl: { id: 'spfl', name: 'Scottish Premiership', shortName: 'SPFL', accent: '#1B3F8B', sportsDbId: '4330' },
+  superlig: { id: 'superlig', name: 'Turkish Süper Lig', shortName: 'Süper Lig', accent: '#C8102E', sportsDbId: '4339' },
+  argprimera: { id: 'argprimera', name: 'Argentine Primera División', shortName: 'Primera', accent: '#6CACE4', sportsDbId: '4406' },
+  saudipro: { id: 'saudipro', name: 'Saudi Pro League', shortName: 'Saudi Pro', accent: '#1C7A3C', sportsDbId: '4668' },
   // National-team and continental tournaments
   worldcup: { id: 'worldcup', name: 'FIFA World Cup', shortName: 'World Cup', accent: '#1B2A6B', sportsDbId: '4429' },
   euros: { id: 'euros', name: 'UEFA European Championship', shortName: 'Euros', accent: '#0E4C92', sportsDbId: '4502' },
@@ -133,36 +140,136 @@ const SPORTSDB_LEAGUE: Record<string, LeagueId> = {
   '5516': 'wcqconcacaf',
   '5515': 'wcqconmebol',
   '5518': 'wcquefa',
+  '4350': 'ligamx',
+  '4351': 'brasileirao',
+  '4330': 'spfl',
+  '4339': 'superlig',
+  '4406': 'argprimera',
+  '4668': 'saudipro',
 }
 
-export function leagueFromSportsDb(
-  idLeague?: string | null,
-  name?: string | null,
-): LeagueId {
+/* ---------- Dynamic league registry (feed leagues beyond the hand-mapped set) ---------- */
+
+const REGISTRY_KEY = 'sfp.leagueRegistry.v1'
+const dynamic = new Map<string, League>()
+const dynamicBySportsDb = new Map<string, League>()
+let leagueVersion = 0
+let leaguesRestored = false
+
+const ACCENTS = ['#0E3C29', '#1B2A6B', '#B64132', '#0B3D91', '#6B2D5C', '#8A5A00', '#2F6B4F', '#4A4A8A']
+
+export function dynamicLeagueId(sportsDbId: string): string {
+  return `l${sportsDbId}`
+}
+
+export function isDynamicLeagueId(id: string): boolean {
+  return /^l\d+$/.test(id)
+}
+
+export function shortLeagueName(name: string): string {
+  const cleaned = name
+    .replace(/^(Argentinian|Argentine|Brazilian|Mexican|Scottish|Turkish|Danish|Dutch|Portuguese|Belgian|Swedish|Norwegian|Swiss|Austrian|Greek|Russian|Ukrainian|Polish|Czech|Croatian|Serbian|Japanese|Korean|Chinese|Australian|American|Canadian|Colombian|Chilean|Peruvian|Uruguayan|Ecuadorian|Paraguayan|Bolivian|Venezuelan|Egyptian|Moroccan|South African|Nigerian|Qatari|Saudi Arabian|Indian|Indonesian|Thai|Irish|Welsh|Northern Irish|English|Spanish|Italian|German|French)\s+/i, '')
+    .trim()
+  return cleaned.length > 16 ? cleaned.slice(0, 15).trim() + '…' : cleaned || name
+}
+
+export function registerLeagues(leagues: League[]): void {
+  let changed = false
+  for (const l of leagues) {
+    if (!l.sportsDbId || SPORTSDB_LEAGUE[l.sportsDbId]) continue
+    const existing = dynamicBySportsDb.get(l.sportsDbId)
+    if (existing && existing.name === l.name) continue
+    const merged: League = { ...existing, ...l, id: existing?.id ?? l.id }
+    dynamic.set(merged.id, merged)
+    dynamicBySportsDb.set(merged.sportsDbId!, merged)
+    changed = true
+  }
+  if (changed) {
+    leagueVersion += 1
+    persistLeagues()
+  }
+}
+
+function persistLeagues(): void {
+  if (!leaguesRestored || typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify([...dynamic.values()].slice(-800)))
+  } catch {
+    /* ignore */
+  }
+}
+
+export function restoreLeagues(): void {
+  if (leaguesRestored) return
+  if (typeof localStorage === 'undefined') {
+    leaguesRestored = true
+    return
+  }
+  try {
+    const raw = localStorage.getItem(REGISTRY_KEY)
+    const list = raw ? (JSON.parse(raw) as League[]) : []
+    if (Array.isArray(list)) registerLeagues(list.filter((l) => l && typeof l.id === 'string' && l.sportsDbId))
+  } catch {
+    /* ignore */
+  } finally {
+    leaguesRestored = true
+  }
+}
+
+export function leagueRegistryVersion(): number {
+  return leagueVersion
+}
+
+/** A league from the feed, registered on sight so fixtures from any league render with a real name. */
+export function leagueFromFeed(idLeague: string, name: string): League {
+  const known = SPORTSDB_LEAGUE[idLeague]
+  if (known) return LEAGUES[known as KnownLeagueId]
+  const existing = dynamicBySportsDb.get(idLeague)
+  if (existing) return existing
+  const league: League = {
+    id: dynamicLeagueId(idLeague),
+    name,
+    shortName: shortLeagueName(name),
+    accent: ACCENTS[Number(idLeague) % ACCENTS.length],
+    sportsDbId: idLeague,
+  }
+  registerLeagues([league])
+  return league
+}
+
+/** Any league by app id — static, dynamic, or a safe placeholder. Never undefined. */
+export function getLeague(id: LeagueId): League {
+  const known = (LEAGUES as Record<string, League>)[id]
+  if (known) return known
+  const dyn = dynamic.get(id)
+  if (dyn) return dyn
+  return { id, name: 'Soccer', shortName: 'Soccer', accent: '#007BFF' }
+}
+
+export function allLeagues(): League[] {
+  return [...Object.values(LEAGUES), ...dynamic.values()]
+}
+
+export function leagueFromSportsDb(idLeague?: string | null, name?: string | null): LeagueId {
   if (idLeague && SPORTSDB_LEAGUE[idLeague]) return SPORTSDB_LEAGUE[idLeague]
   const n = (name ?? '').toLowerCase()
-  if (n.includes('champions league')) return 'ucl'
+  if (n.includes('champions league') && !n.includes('afc') && !n.includes('caf') && !n.includes('concacaf')) return 'ucl'
   if (n.includes('europa league')) return 'uel'
   if (n.includes('conference league')) return 'uecl'
   if (n.includes('efl cup') || n.includes('carabao') || n.includes('league cup')) return 'eflcup'
   if (n.includes('fa cup')) return 'facup'
   if (n.includes('copa del rey')) return 'copadelrey'
   if (n.includes('coppa italia')) return 'coppaitalia'
-  if (n.includes('dfb')) return 'dfbpokal'
   if (n.includes('leagues cup')) return 'leaguescup'
-  if (n.includes('open cup')) return 'usopencup'
   if (n.includes('club world cup')) return 'clubworldcup'
-  if (n.includes('world cup') && n.includes('qualif')) return 'other'
-  if (n.includes('world cup')) return 'worldcup'
   if (n.includes('copa america') || n.includes('copa américa')) return 'copaamerica'
   if (n.includes('gold cup')) return 'goldcup'
   if (n.includes('libertadores')) return 'libertadores'
-  if (n.includes('premier')) return 'epl'
-  if (n.includes('la liga') || n.includes('spanish')) return 'laliga'
-  if (n.includes('serie')) return 'seriea'
-  if (n.includes('ligue')) return 'ligue1'
-  if (n.includes('major league') || n.includes('mls')) return 'mls'
-  if (n.includes('bundesliga')) return 'bundesliga'
+  if (idLeague && name) return leagueFromFeed(idLeague, name).id
+  if (idLeague) {
+    const dyn = dynamicBySportsDb.get(idLeague)
+    if (dyn) return dyn.id
+  }
   return 'other'
 }
 
@@ -182,6 +289,6 @@ export function leagueFollowId(id: LeagueId): string {
 
 export function leagueIdFromFollow(followId: string): LeagueId | null {
   if (!followId.startsWith(LEAGUE_FOLLOW_PREFIX)) return null
-  const id = followId.slice(LEAGUE_FOLLOW_PREFIX.length) as LeagueId
-  return id in LEAGUES ? id : null
+  const id = followId.slice(LEAGUE_FOLLOW_PREFIX.length)
+  return id in LEAGUES || isDynamicLeagueId(id) ? id : null
 }

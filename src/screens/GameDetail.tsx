@@ -6,7 +6,7 @@ import { ChangeBadge, SaveLaterButton, Scoreboard } from '../components/GameCard
 import { CalendarPlusIcon } from '../components/icons'
 import { HighlightLink, LineupsPanel, TablePanel, TvListingsPanel } from '../components/MatchExtras'
 import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { destinationsForFixture, primaryDestination, RIGHTS_REVIEWED_ON } from '../data/watch'
 import { buildIcs, downloadIcs } from '../lib/ics'
@@ -36,7 +36,7 @@ export function GameDetail() {
 
   const home = fixture ? getTeam(fixture.homeTeamId) : undefined
   const away = fixture ? getTeam(fixture.awayTeamId) : undefined
-  const league = fixture ? LEAGUES[fixture.leagueId] : null
+  const league = fixture ? getLeague(fixture.leagueId) : null
   const dests = fixture ? destinationsForFixture(fixture, subscribed) : []
   const primary = fixture ? primaryDestination(fixture, subscribed) : null
 

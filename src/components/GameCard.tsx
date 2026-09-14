@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import type { DestinationId, Fixture, Team } from '../domain/types'
 import { scoreLabel } from '../lib/status'
@@ -30,7 +30,7 @@ function useMasked(fixture: Fixture): boolean {
 
 export function featuredKicker(fixture: Fixture): string {
   const kick = formatKickoff(fixture.kickoffUtc)
-  const league = LEAGUES[fixture.leagueId]
+  const league = getLeague(fixture.leagueId)
   const prefix = fixture.status === 'live' ? 'Now' : 'Next up'
   return `${prefix} — ${kick.day} — ${league.shortName}`
 }
@@ -126,7 +126,7 @@ function TeamLine({
 }
 
 function Rail({ fixture, subscribed }: { fixture: Fixture; subscribed: DestinationId[] }) {
-  const league = LEAGUES[fixture.leagueId]
+  const league = getLeague(fixture.leagueId)
   return (
     <div className="fixture-rail">
       <span className="mono-label">{league.shortName}</span>

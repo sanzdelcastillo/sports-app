@@ -2,7 +2,8 @@ export type WatchAvailability = 'live' | 'replay' | 'upcoming' | 'unknown'
 
 export type FixtureStatus = 'scheduled' | 'live' | 'final' | 'unknown'
 
-export type LeagueId =
+/** Known league ids, plus any league the feed knows about (`l<idLeague>`). */
+export type KnownLeagueId =
   | 'mls'
   | 'epl'
   | 'laliga'
@@ -37,7 +38,15 @@ export type LeagueId =
   | 'wcqconcacaf'
   | 'wcqconmebol'
   | 'wcquefa'
+  | 'ligamx'
+  | 'brasileirao'
+  | 'spfl'
+  | 'superlig'
+  | 'argprimera'
+  | 'saudipro'
   | 'other'
+
+export type LeagueId = KnownLeagueId | (string & {})
 
 export type DestinationId =
   | 'apple-tv-mls'

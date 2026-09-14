@@ -156,6 +156,12 @@ const LEAGUE_PROVIDERS: Partial<Record<LeagueId, DestinationId[]>> = {
   dfbpokal: ['espn-plus'],
   leaguescup: ['apple-tv-mls'],
   usopencup: ['paramount-plus'],
+  ligamx: ['univision', 'fox'],
+  brasileirao: ['paramount-plus'],
+  spfl: ['paramount-plus'],
+  superlig: ['bein'],
+  argprimera: [],
+  saudipro: [],
   // Tournaments — reviewed for the 2026-27 window; unlisted ones are shown as unconfirmed rather than guessed.
   worldcup: ['fox', 'peacock'],
   euros: ['fox'],

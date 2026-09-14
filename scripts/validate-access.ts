@@ -13,7 +13,8 @@ import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/servi
 import { mapClub } from '../src/services/clubs'
 import { mapEvent } from '../src/services/theSportsDb'
 import { involvesTeam } from '../src/lib/status'
-import { leagueIdFromFollow } from '../src/data/leagues'
+import { getLeague, leagueIdFromFollow } from '../src/data/leagues'
+import { leagueForEntry, searchLeagues } from '../src/services/leagues'
 import { followKeywords, isForYou } from '../src/services/news'
 // @ts-expect-error plain JS function module
 import { parseRss } from '../api/news.js'
@@ -177,6 +178,28 @@ const uclGame = { ...cupTie!, leagueId: 'ucl' as const, homeTeamId: 't1', awayTe
 expect(involvesTeam(uclGame, 'league:ucl') && !involvesTeam(uclGame, 'league:uel'), 'a followed competition covers its games')
 expect(!involvesTeam(uclGame, 'ars'), 'club follow still needs the club on the pitch')
 expect(leagueIdFromFollow('league:worldcup') === 'worldcup' && leagueIdFromFollow('ars') === null, 'follow ids parse')
+
+console.log('Any league')
+const dir = [
+  { id: '4406', name: 'Argentinian Primera Division' },
+  { id: '4340', name: 'Danish Superliga' },
+  { id: '4668', name: 'Saudi-Arabian Pro League' },
+  { id: '5215', name: 'Argentina Primera B Metropolitana' },
+]
+expect(searchLeagues(dir, 'denmark').some((e) => e.id === '4340'), 'country name finds a league named by demonym')
+expect(searchLeagues(dir, 'saudi').some((e) => e.id === '4668'), 'partial country search')
+expect(searchLeagues(dir, 'argentina').length === 2, 'both Argentine leagues match')
+const danish = leagueForEntry(dir[1])
+expect(danish.id === 'l4340' && danish.shortName === 'Superliga', 'unmapped league registered from the feed with a short name')
+expect(getLeague('l4340').name === 'Danish Superliga' && getLeague('nope').name === 'Soccer', 'getLeague resolves dynamic ids and never returns undefined')
+expect(leagueIdFromFollow('league:l4340') === 'l4340', 'dynamic league follows parse')
+const danishGame = mapEvent({
+  idEvent: '999002', strTimestamp: '2026-09-20T17:00:00', dateEvent: '2026-09-20', strTime: '17:00:00',
+  idHomeTeam: '900001', strHomeTeam: 'FC Copenhagen', idAwayTeam: '900002', strAwayTeam: 'Brøndby',
+  idLeague: '4340', strLeague: 'Danish Superliga', strStatus: 'Not Started',
+} as never)
+expect(danishGame?.leagueId === 'l4340' && danishGame.leagueName === 'Danish Superliga', 'a game from any league carries its real league')
+expect(accessFor(danishGame!, ['peacock']).state === 'unknown', 'no U.S. rights guess for an unmapped league')
 
 console.log('News parsing')
 const rss = `<rss><channel><item><title><![CDATA[Arsenal &amp; Chelsea draw]]></title><link>https://x.test/a</link><pubDate>Mon, 14 Sep 2026 11:25:35 GMT</pubDate></item><item><title>No link</title></item></channel></rss>`

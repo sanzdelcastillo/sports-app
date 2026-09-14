@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LEAGUES, leagueIdFromFollow } from '../data/leagues'
+import { getLeague, leagueIdFromFollow } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { accessFor } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
@@ -34,7 +34,7 @@ export function ClubStrip({
   return (
     <div className="club-strip" role="list" aria-label="Next game for everything you follow">
       {follows.map(leagueIdFromFollow).filter((id): id is NonNullable<typeof id> => id !== null).map((leagueId) => {
-        const league = LEAGUES[leagueId]
+        const league = getLeague(leagueId)
         const thisWeek = upcoming.filter((f) => f.leagueId === leagueId)
         const next = thisWeek[0] ?? nextBeyondWeek(leagueId)
         const inWeek = thisWeek.length > 0

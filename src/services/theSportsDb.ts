@@ -1,4 +1,4 @@
-import { LEAGUES, leagueFromSportsDb } from '../data/leagues'
+import { getLeague, leagueFromSportsDb } from '../data/leagues'
 import { registerTeams, resolveTeam, teamBySportsDb } from '../data/teams'
 import { teamFromFeed } from './clubs'
 import type { Fixture, FixtureStatus, Team, LeagueId } from '../domain/types'
@@ -98,7 +98,7 @@ export function mapEvent(event: SportsDbEvent): Fixture | null {
   const kickoffUtc = toIso(event)
   if (!home || !away || !kickoffUtc || !event.idEvent) return null
 
-  const leagueName = leagueId === 'other' ? event.strLeague || 'Soccer' : LEAGUES[leagueId].name
+  const leagueName = leagueId === 'other' ? event.strLeague || 'Soccer' : getLeague(leagueId).name
 
   return {
     id: event.idEvent,

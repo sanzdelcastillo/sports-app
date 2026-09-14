@@ -1,4 +1,5 @@
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
+import { restoreLeagues } from '../data/leagues'
 import { dynamicTeamId, registerTeams, restoreRegistry, teamBySportsDb } from '../data/teams'
 import type { LeagueId, Team } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
@@ -63,7 +64,7 @@ export function mapClub(raw: RawTeam, leagueId: LeagueId): Team | null {
 
 /** Every club in a league, from the device cache when fresh, otherwise the feed (premium). */
 export async function loadLeagueClubs(leagueId: LeagueId): Promise<Team[]> {
-  const league = LEAGUES[leagueId]
+  const league = getLeague(leagueId)
   if (!league.sportsDbId) return []
   const key = `sfp.clubs.${leagueId}.v1`
   const cached = readJson<Catalogue | null>(key, null)
@@ -95,4 +96,5 @@ export function rememberCustomTeams(follows: string[]): void {
 export function bootTeams(): void {
   registerTeams(readCustomTeams())
   restoreRegistry()
+  restoreLeagues()
 }

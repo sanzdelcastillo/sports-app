@@ -2109,3 +2109,26 @@ h3 {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+
+/* ---------- League finder ---------- */
+
+.league-finder {
+  margin-bottom: 8px;
+}
+
+.comp-row.static {
+  cursor: default;
+}
+
+.league-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.league-actions .text-btn {
+  color: var(--pitch-deep);
+  font-weight: 600;
+  font-size: 13px;
+}

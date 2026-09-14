@@ -1,4 +1,4 @@
-import { LEAGUES } from '../data/leagues'
+import { getLeague } from '../data/leagues'
 import type { Fixture, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
 import { getJson, V1, V2 } from './theSportsDb'
@@ -152,7 +152,7 @@ export async function fetchLineup(fixture: Fixture): Promise<MatchLineup | null>
 }
 
 export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> {
-  const league = LEAGUES[fixture.leagueId]
+  const league = getLeague(fixture.leagueId)
   if (!league.sportsDbId) return null
   const season = fixture.season ?? seasonFor(fixture.leagueId, fixture.kickoffUtc)
   const key = `sfp.table.${fixture.leagueId}.${season}`
