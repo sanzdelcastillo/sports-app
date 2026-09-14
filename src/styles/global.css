@@ -93,7 +93,7 @@ h3 {
   width: min(480px, 100%);
   margin: 0 auto;
   min-height: 100dvh;
-  padding: 14px 16px calc(var(--nav-h) + var(--safe-b) + 24px);
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-h) + var(--safe-b) + 24px);
 }
 
 /* ---------- Masthead ---------- */

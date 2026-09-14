@@ -31,6 +31,14 @@ function cacheFor(version, rest) {
 }
 
 export default async function handler(req, res) {
+  // The native apps load from capacitor://localhost / https://localhost, so allow cross-origin reads.
+  res.setHeader('access-control-allow-origin', '*')
+  res.setHeader('access-control-allow-methods', 'GET, OPTIONS')
+  res.setHeader('access-control-allow-headers', 'content-type')
+  if (req.method === 'OPTIONS') {
+    res.status(204).end()
+    return
+  }
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'GET only' })
     return

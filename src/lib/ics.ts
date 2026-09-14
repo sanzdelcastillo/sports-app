@@ -2,6 +2,7 @@ import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { accessFor, RIGHTS_REVIEWED_ON } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
+import { shareFile } from '../native/external'
 import { parseUtc } from './time'
 
 const PRODID = '-//Pitchside//Week//EN'
@@ -77,13 +78,6 @@ export function buildIcs(fixtures: Fixture[], subscribed: DestinationId[], name 
 }
 
 export function downloadIcs(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename.endsWith('.ics') ? filename : `${filename}.ics`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const name = filename.endsWith('.ics') ? filename : `${filename}.ics`
+  void shareFile(name, content, 'text/calendar;charset=utf-8')
 }

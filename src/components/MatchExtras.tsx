@@ -12,6 +12,7 @@ import {
   type StandingRow,
   type TeamLineup,
 } from '../services/matchExtras'
+import { openExternal } from '../native/external'
 import { useAppState } from '../stores/AppState'
 import { TeamCrest } from './TeamCrest'
 
@@ -312,7 +313,16 @@ export function HighlightLink({ fixture }: { fixture: Fixture }) {
   const [load] = useLoad(fixture, enabled ? fetchHighlight : async () => null)
   if (!enabled || load.state !== 'ready' || !load.data) return null
   return (
-    <a className="cta secondary wide highlight-link" href={load.data.url} target="_blank" rel="noreferrer">
+    <a
+      className="cta secondary wide highlight-link"
+      href={load.data.url}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(event) => {
+        event.preventDefault()
+        void openExternal(load.data!.url)
+      }}
+    >
       Watch highlights on YouTube ↗
     </a>
   )

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { buildIcs, downloadIcs } from '../lib/ics'
 import { buildWeekText } from '../lib/shareWeek'
+import { canShare as canShareNative, shareText } from '../native/external'
 import { useAppState } from '../stores/AppState'
 
 type CopyState = 'idle' | 'copied' | 'failed'
@@ -17,7 +18,7 @@ export function ShareWeek() {
     [week.fixtures, subscribed, includeAccess],
   )
 
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+  const canShare = canShareNative()
 
   async function copy() {
     try {
@@ -31,7 +32,7 @@ export function ShareWeek() {
 
   async function share() {
     try {
-      await navigator.share({ title: "This week's games", text })
+      await shareText("This week's games", text)
     } catch {
       /* user cancelled or share unavailable — nothing to do */
     }

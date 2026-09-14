@@ -4,6 +4,8 @@ import { AppHeader } from '../components/AppHeader'
 import { RIGHTS_REVIEWED_ON, RIGHTS_SEASON } from '../data/watch'
 import { decodeSetup, encodeSetup } from '../lib/setupCode'
 import { DEFAULT_TIME_ZONE } from '../lib/time'
+import { ALERT_LEAD_MINUTES } from '../native/alerts'
+import { isNative } from '../native/platform'
 import { useAppState } from '../stores/AppState'
 
 const APP_VERSION = '1.1.0'
@@ -19,7 +21,16 @@ export function Settings() {
     toggleShowCrests,
     applySetup,
     clearAll,
+    kickoffAlerts,
+    setKickoffAlerts,
   } = useAppState()
+  const [alertNote, setAlertNote] = useState<string | null>(null)
+
+  async function toggleAlerts() {
+    const ok = await setKickoffAlerts(!kickoffAlerts)
+    if (!kickoffAlerts && !ok) setAlertNote('Notifications are off for Pitchside in your phone settings.')
+    else setAlertNote(null)
+  }
   const [pasted, setPasted] = useState('')
   const [note, setNote] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -53,6 +64,22 @@ export function Settings() {
     <div>
       <AppHeader />
       <h1 className="page-title">Settings</h1>
+
+      {isNative() ? (
+        <>
+          <div className="date-head">Alerts</div>
+          <label className="card option-row">
+            <span>
+              <strong>Kickoff alerts</strong>
+              <span className="option-sub">A notification {ALERT_LEAD_MINUTES} minutes before each of your clubs' games, with where to watch.</span>
+            </span>
+            <button type="button" className={`toggle${kickoffAlerts ? ' on' : ''}`} aria-pressed={kickoffAlerts} onClick={() => void toggleAlerts()}>
+              {kickoffAlerts ? 'On' : 'Off'}
+            </button>
+          </label>
+          {alertNote ? <p className="source-note">{alertNote}</p> : null}
+        </>
+      ) : null}
 
       <div className="date-head">Viewing</div>
       <label className="card option-row">

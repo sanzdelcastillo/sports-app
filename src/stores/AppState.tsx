@@ -12,6 +12,8 @@ import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
 import { type Setup } from '../lib/setupCode'
 import { readJson, writeJson } from '../lib/storage'
 import { bootTeams, rememberCustomTeams } from '../services/clubs'
+import { alertsPermitted, cancelAllAlerts, scheduleKickoffAlerts } from '../native/alerts'
+import { isNative } from '../native/platform'
 import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
 import { anyInPlay, applyLive, fetchLiveSoccer } from '../services/livescores'
 
@@ -20,6 +22,7 @@ const SUBS_KEY = 'sfp.subscriptions.v1'
 const SPOILER_KEY = 'sfp.hideScores.v1'
 const CRESTS_KEY = 'sfp.showCrests.v1'
 const ONBOARDED_KEY = 'sfp.onboarded.v1'
+const ALERTS_KEY = 'sfp.kickoffAlerts.v1'
 const SEEN_KEY = 'sfp.seen.v1'
 const CHANGES_KEY = 'sfp.changes.v1'
 const LATER_KEY = 'sfp.watchLater.v1'
@@ -36,6 +39,9 @@ interface AppState {
   /** Club crests and player photos on; off shows text badges only. */
   showCrests: boolean
   toggleShowCrests: () => void
+  /** Kickoff alerts (native only): a notification 15 minutes before each followed game. */
+  kickoffAlerts: boolean
+  setKickoffAlerts: (on: boolean) => Promise<boolean>
   /** First-run flow finished. */
   onboarded: boolean
   finishOnboarding: () => void
@@ -74,6 +80,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   )
   const [showCrests, setShowCrests] = useState<boolean>(() => readJson<boolean>(CRESTS_KEY, true))
   const [onboarded, setOnboarded] = useState<boolean>(() => readJson<boolean>(ONBOARDED_KEY, false))
+  const [kickoffAlerts, setKickoffAlertsState] = useState<boolean>(() => readJson<boolean>(ALERTS_KEY, false))
   const [seen, setSeen] = useState<SeenMap>(() => readJson<SeenMap>(SEEN_KEY, {}))
   const [changes, setChanges] = useState<FixtureChange[]>(() =>
     readJson<FixtureChange[]>(CHANGES_KEY, []),
@@ -98,6 +105,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(SPOILER_KEY, hideScores), [hideScores])
   useEffect(() => writeJson(CRESTS_KEY, showCrests), [showCrests])
   useEffect(() => writeJson(ONBOARDED_KEY, onboarded), [onboarded])
+  useEffect(() => writeJson(ALERTS_KEY, kickoffAlerts), [kickoffAlerts])
+
+  // Keep the notification queue in step with the week whenever alerts are on.
+  useEffect(() => {
+    if (!isNative() || !kickoffAlerts) return
+    void scheduleKickoffAlerts(week.fixtures, subscribed)
+  }, [kickoffAlerts, week.fixtures, subscribed])
   useEffect(() => writeJson(SEEN_KEY, seen), [seen])
   useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
   useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
@@ -162,6 +176,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const toggleShowCrests = useCallback(() => setShowCrests((prev) => !prev), [])
   const finishOnboarding = useCallback(() => setOnboarded(true), [])
 
+  const setKickoffAlerts = useCallback(async (on: boolean) => {
+    if (!on) {
+      setKickoffAlertsState(false)
+      await cancelAllAlerts()
+      return false
+    }
+    const ok = await alertsPermitted()
+    setKickoffAlertsState(ok)
+    return ok
+  }, [])
+
   const applySetup = useCallback((setup: Setup) => {
     setFollows(setup.follows)
     setSubscribed(setup.subscribed)
@@ -210,6 +235,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleHideScores,
       showCrests,
       toggleShowCrests,
+      kickoffAlerts,
+      setKickoffAlerts,
       onboarded,
       finishOnboarding,
       applySetup,
@@ -237,6 +264,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleHideScores,
       showCrests,
       toggleShowCrests,
+      kickoffAlerts,
+      setKickoffAlerts,
+      kickoffAlerts,
+      setKickoffAlerts,
       onboarded,
       finishOnboarding,
       applySetup,

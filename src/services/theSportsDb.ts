@@ -2,9 +2,13 @@ import { LEAGUES, leagueFromSportsDb } from '../data/leagues'
 import { resolveTeam, teamBySportsDb } from '../data/teams'
 import type { Fixture, FixtureStatus, Team } from '../domain/types'
 
-/** All calls go through our proxy so the premium key stays on the server. */
-export const V1 = '/api/sportsdb/v1'
-export const V2 = '/api/sportsdb/v2'
+/**
+ * All calls go through our proxy so the premium key stays on the server.
+ * In the browser the proxy is same-origin; the native shell needs the deployed site's URL (VITE_API_BASE).
+ */
+const API_ORIGIN = ((import.meta.env?.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
+export const V1 = `${API_ORIGIN}/api/sportsdb/v1`
+export const V2 = `${API_ORIGIN}/api/sportsdb/v2`
 const BASE = V1
 
 interface SportsDbEvent {

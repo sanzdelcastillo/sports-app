@@ -67,6 +67,12 @@ npm run preview  # serve the build
 
 No API key is required for first boot. Fixture seed data is bundled so My Week is never empty when followed-team games exist in the seed.
 
+## Native shell (Capacitor)
+
+`ios/` and `android/` are the store apps, wrapping the same web build. `npm run cap:sync` builds and copies the web app into both. See `MAC-SETUP.md` for Xcode / TestFlight / Play steps.
+
+Native-only behaviour lives in `src/native/`: kickoff alerts via local notifications (`alerts.ts`), share sheet, in-app browser and file hand-off (`external.ts`), status bar / splash / back button (`init.ts`). The shell needs `VITE_API_BASE` set to the deployed site so `/api/sportsdb` resolves; the proxy sends CORS headers for that. Storage writes are mirrored to Capacitor Preferences and restored on launch, because iOS may purge WebView storage.
+
 ## Premium data key (TheSportsDB, $9/mo)
 
 The key is read on the server, never shipped to the browser. All data calls go to `/api/sportsdb/...`:

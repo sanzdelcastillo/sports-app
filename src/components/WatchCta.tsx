@@ -1,5 +1,6 @@
 import { accessFor } from '../data/watch'
 import type { AccessState, DestinationId, Fixture, WatchAvailability } from '../domain/types'
+import { openExternal } from '../native/external'
 import { CheckIcon } from './icons'
 
 export function WatchCta({
@@ -32,7 +33,11 @@ export function WatchCta({
       href={dest.url}
       target="_blank"
       rel="noreferrer"
-      onClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        void openExternal(dest.url)
+      }}
     >
       {label}
     </a>

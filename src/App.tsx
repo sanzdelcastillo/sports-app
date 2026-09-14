@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { Clubs } from './screens/Clubs'
 import { Conflicts } from './screens/Conflicts'
@@ -9,15 +9,21 @@ import { Settings } from './screens/Settings'
 import { ShareWeek } from './screens/ShareWeek'
 import { Watch } from './screens/Watch'
 import { Welcome } from './screens/Welcome'
+import { onAlertTap } from './native/alerts'
 import { useAppState } from './stores/AppState'
 
 export default function App() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { onboarded } = useAppState()
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [location.pathname])
+
+  useEffect(() => {
+    onAlertTap((fixtureId) => navigate(`/game/${fixtureId}`))
+  }, [navigate])
 
   if (!onboarded && location.pathname !== '/welcome') {
     return <Navigate to="/welcome" replace />

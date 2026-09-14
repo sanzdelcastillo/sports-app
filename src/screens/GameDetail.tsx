@@ -11,6 +11,7 @@ import { getTeam } from '../data/teams'
 import { destinationsForFixture, primaryDestination, RIGHTS_REVIEWED_ON } from '../data/watch'
 import { buildIcs, downloadIcs } from '../lib/ics'
 import { formatVenueDate } from '../lib/time'
+import { openExternal } from '../native/external'
 import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
@@ -116,7 +117,16 @@ export function GameDetail() {
                 </div>
                 <h3>{dest.name}</h3>
                 <p className="watch-app">{dest.note}</p>
-                <a className="deep-link" href={dest.url} target="_blank" rel="noreferrer">
+                <a
+                  className="deep-link"
+                  href={dest.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void openExternal(dest.url)
+                  }}
+                >
                   Open provider site ↗
                 </a>
               </div>
