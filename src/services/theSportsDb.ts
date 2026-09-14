@@ -2,7 +2,10 @@ import { leagueFromSportsDb } from '../data/leagues'
 import { resolveTeam, TEAM_BY_SPORTSDB } from '../data/teams'
 import type { Fixture, FixtureStatus, Team } from '../domain/types'
 
-const BASE = 'https://www.thesportsdb.com/api/v1/json/3'
+/** All calls go through our proxy so the premium key stays on the server. */
+export const V1 = '/api/sportsdb/v1'
+export const V2 = '/api/sportsdb/v2'
+const BASE = V1
 
 interface SportsDbEvent {
   idEvent?: string
@@ -113,6 +116,14 @@ export class RateLimited extends Error {
   }
 }
 
+/** The proxy answers 503 for premium-only endpoints when no key is configured. */
+export class NoPremiumKey extends Error {
+  constructor() {
+    super('Premium data source key not configured')
+    this.name = 'NoPremiumKey'
+  }
+}
+
 export async function getJson<T>(url: string, retry = true): Promise<T> {
   return spaced(async () => {
     const res = await fetch(url)
@@ -123,6 +134,7 @@ export async function getJson<T>(url: string, retry = true): Promise<T> {
       }
       throw new RateLimited()
     }
+    if ([400, 401, 403, 503].includes(res.status) && url.startsWith(V2)) throw new NoPremiumKey()
     if (!res.ok) throw new Error(`TheSportsDB ${res.status}`)
     return (await res.json()) as T
   })

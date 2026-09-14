@@ -62,6 +62,7 @@ export function MyWeek() {
     dismissChanges,
     watchLater,
     markWatched,
+    liveFeed,
   } = useAppState()
 
   const { featured, upcomingGroups, recentGroups } = useMemo(() => {
@@ -162,7 +163,8 @@ export function MyWeek() {
         ) : null}
         {coverage.total > 0 && gapsLine(coverage) ? <p className="hero-gaps">{gapsLine(coverage)}</p> : null}
         <div className="hero-meta mono-label light">
-          {follows.length} followed teams — {sourceLabel} —{' '}
+          {follows.length} followed teams — {sourceLabel}
+          {liveFeed === 'on' ? ' — live scores on' : ''} —{' '}
           <button className="text-btn" type="button" onClick={() => void refresh(true)}>
             Refresh
           </button>

@@ -8,6 +8,7 @@ import { diffWeek, mergeChanges, snapshotWeek } from '../src/lib/changes'
 import { buildIcs, escapeIcs } from '../src/lib/ics'
 import { buildWeekText } from '../src/lib/shareWeek'
 import { favoritesComplete } from '../src/services/fixtures'
+import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
 import { groupLineup, seasonFor, shapeOf } from '../src/services/matchExtras'
 
 let failures = 0
@@ -129,6 +130,27 @@ expect(grouped.home.shape === '4-3-3', 'shape counted as 4-3-3')
 expect(grouped.home.starters[0].slot === 'GK', 'goalkeeper listed first')
 expect(grouped.away.starters.length === 1 && grouped.away.shape === null, 'incomplete away eleven has no shape')
 expect(shapeOf([]) === null, 'empty lineup has no shape')
+
+console.log('Live scores')
+const live = mapLive([
+  { idEvent: 'epl-1', intHomeScore: '1', intAwayScore: '0', strStatus: '2H', strProgress: '67' },
+  { idEvent: 'ucl-1', intHomeScore: '2', intAwayScore: '2', strStatus: 'FT', strProgress: '90' },
+  { idEvent: 'other', intHomeScore: '0', intAwayScore: '0', strStatus: 'HT', strProgress: '45' },
+  { intHomeScore: '9' },
+])
+expect(live.length === 3, 'entries without an event id are dropped')
+expect(live[0].status === 'live' && live[0].statusDetail === "67'", 'second half maps to live with the minute')
+expect(live[1].status === 'final' && live[1].statusDetail === 'FT', 'FT maps to final')
+expect(live[2].statusDetail === 'HT', 'half time label')
+const applied = applyLive([epl, ucl, buli], live)
+expect(applied[0].homeScore === 1 && applied[0].status === 'live', 'live score overlays the fixture')
+expect(applied[1].status === 'final' && applied[1].awayScore === 2, 'finished score overlays the fixture')
+expect(applied[2] === buli, 'untouched fixture keeps identity')
+const same = [epl]
+expect(applyLive(same, []) === same, 'empty update returns the same array')
+expect(anyInPlay([epl], new Date('2026-09-19T14:30:00Z')), 'thirty minutes after kickoff counts as in play')
+expect(!anyInPlay([epl], new Date('2026-09-19T18:00:00Z')), 'four hours after kickoff does not')
+expect(!anyInPlay([{ ...epl, status: 'final' }], new Date('2026-09-19T14:30:00Z')), 'finished games never poll')
 
 if (failures) {
   console.log(`\n${failures} check(s) failed`)

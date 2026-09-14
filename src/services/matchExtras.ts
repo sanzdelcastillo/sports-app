@@ -1,9 +1,9 @@
 import { LEAGUES } from '../data/leagues'
 import type { Fixture, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { getJson } from './theSportsDb'
+import { getJson, V1 } from './theSportsDb'
 
-const BASE = 'https://www.thesportsdb.com/api/v1/json/3'
+const BASE = V1
 
 export type LineupSlot = 'GK' | 'DEF' | 'MID' | 'FWD' | 'SUB'
 

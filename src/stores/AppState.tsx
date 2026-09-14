@@ -12,6 +12,7 @@ import type { DestinationId, Fixture, FixtureChange, Reminder, SeenMap } from '.
 import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
 import { readJson, writeJson } from '../lib/storage'
 import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
+import { anyInPlay, applyLive, fetchLiveSoccer } from '../services/livescores'
 
 const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
@@ -43,6 +44,8 @@ interface AppState {
   toggleWatchLater: (fixtureId: string) => void
   markWatched: (fixtureId: string) => void
   week: WeekResult
+  /** 'on' once the premium livescore feed has answered; 'off' when the proxy has no key. */
+  liveFeed: 'unknown' | 'on' | 'off'
   loading: boolean
   /** Fetch what's stale. `force` re-fetches every club (manual Refresh). */
   refresh: (force?: boolean) => Promise<void>
@@ -78,6 +81,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   })
   const [loading, setLoading] = useState(true)
+  const [liveFeed, setLiveFeed] = useState<'unknown' | 'on' | 'off'>('unknown')
 
   useEffect(() => writeJson(FOLLOWS_KEY, follows), [follows])
   useEffect(() => writeJson(SUBS_KEY, subscribed), [subscribed])
@@ -105,6 +109,31 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  // Live scores: poll every two minutes, but only while one of the week's games could be in play.
+  useEffect(() => {
+    if (liveFeed === 'off' || !anyInPlay(week.fixtures)) return
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const updates = await fetchLiveSoccer()
+        if (cancelled) return
+        setLiveFeed('on')
+        setWeek((prev) => {
+          const fixtures = applyLive(prev.fixtures, updates)
+          return fixtures === prev.fixtures ? prev : { ...prev, fixtures }
+        })
+      } catch (error) {
+        if (!cancelled && error instanceof Error && error.name === 'NoPremiumKey') setLiveFeed('off')
+      }
+    }
+    void tick()
+    const id = window.setInterval(() => void tick(), 120_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [week.fixtures, liveFeed])
 
   const toggleFollow = useCallback((teamId: string) => {
     setFollows((prev) =>
@@ -171,6 +200,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleWatchLater,
       markWatched,
       week,
+      liveFeed,
       loading,
       refresh,
       allFixtures: week.fixtures,
@@ -194,6 +224,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleWatchLater,
       markWatched,
       week,
+      liveFeed,
       loading,
       refresh,
     ],

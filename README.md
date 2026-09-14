@@ -70,6 +70,18 @@ npm run preview  # serve the build
 
 No API key is required for first boot. Fixture seed data is bundled so My Week is never empty when followed-team games exist in the seed.
 
+## Premium data key (TheSportsDB, $9/mo)
+
+The key is read on the server, never shipped to the browser. All data calls go to `/api/sportsdb/...`:
+
+- **Deployed (Vercel):** `api/sportsdb/[...path].js` is a serverless function. It injects `SPORTSDB_KEY` for v1 calls and sends it as `X-API-KEY` for v2, allows only the endpoints the app uses, and sets edge cache headers so many phones share one upstream request.
+- **Local:** `vite.config.ts` proxies the same paths, reading `SPORTSDB_KEY` from `.env.local` (git-ignored). Copy `.env.example` to `.env.local` and paste the key.
+- **Without a key:** v1 falls back to the free key (one upcoming game per club, 30 req/min); v2 answers 503 and the app quietly turns live scores off.
+
+Set it on Vercel: Project → Settings → Environment Variables → add `SPORTSDB_KEY` for all environments → Save → Deployments → Redeploy the latest.
+
+What the key changes: 10 next / 10 previous games per club instead of 1, 100 requests a minute, real live scores every two minutes while a followed game is in play (`src/services/livescores.ts`), unwatermarked images, and it satisfies TheSportsDB's commercial-use requirement.
+
 ## Data freshness and limits
 
 - **Last saved week.** Every successful live fetch is saved on the device (`sfp.lastGoodWeek.v1`). If the source is down, the app shows the saved week (labelled "Saved 3 hr ago") instead of the bundled sample. The sample seed is the last resort only.
