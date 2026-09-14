@@ -14,8 +14,8 @@ No monetization or pricing UI in v1.
 
 ## Screens
 
-- **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs, with a coverage line ("6 of 9 upcoming in your apps or free · 3 need Paramount+") and a hide-scores toggle
-- **Game Detail** — crests, kickoff, venue, where-to-watch destinations only
+- **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs: week stats, a "Your clubs" strip (each club's next game and whether you can reach it), schedule-change strip, catch-up-later queue, hide-scores toggle
+- **Game Detail** — scoreboard, then tabs: Watch (destinations), Lineups (real, when the source has them), Table (standings + last-five form for both clubs), Plan (reminder + calendar file), News
 - **Follows** — Julio’s 11 seed clubs plus more soccer; real public crests
 - **My apps** (`/watch`) — tick the services you pay for; free services are listed but never need ticking
 - **Share my week** (`/share`) — plain-text week (day, kickoff ET, matchup, where to watch) with Copy and native Share; never includes scores
@@ -69,6 +69,14 @@ npm run preview  # serve the build
 ```
 
 No API key is required for first boot. Fixture seed data is bundled so My Week is never empty when followed-team games exist in the seed.
+
+## Data freshness and limits
+
+- **Last saved week.** Every successful live fetch is saved on the device (`sfp.lastGoodWeek.v1`). If the source is down, the app shows the saved week (labelled "Saved 3 hr ago") instead of the bundled sample. The sample seed is the last resort only.
+- **Fetch only what's stale.** Each club records when it was last fetched (`sfp.fetchMeta.v1`). On open, only clubs older than 10 minutes are requested; toggling one club costs two requests, not twenty. The Refresh link forces every club.
+- **Rate limit.** TheSportsDB's free key allows roughly 30 requests a minute. Requests are spaced 250 ms apart and a 429 is retried once after 2.5 s; the game page shows "The data source is busy" with Try again if it persists.
+- **Game extras.** Lineups (`lookuplineup`) and standings with form (`lookuptable`) are cached per game / per league-season for 10 min / 1 hr. The free feed is community-maintained, so some lineups are partial — the UI says so rather than padding them.
+- **Home-screen install.** `public/manifest.webmanifest`, icons, and `public/sw.js` (app shell network-first, hashed assets cache-first, API always network). Registered in production only.
 
 ## Data
 

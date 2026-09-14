@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
+import { ClubStrip } from '../components/ClubStrip'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, GameCardSkeleton, GameRow } from '../components/GameCard'
 import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
 import type { FixtureChange } from '../domain/types'
 import { findConflicts } from '../lib/conflicts'
-import { formatKickoff } from '../lib/time'
+import { formatKickoff, relativeLabel } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
@@ -18,6 +19,11 @@ function gapsLine(c: ReturnType<typeof coverageFor>): string | null {
   }
   if (c.unknown) parts.push(`${c.unknown} with no confirmed listing`)
   return parts.length ? parts.join('. ') + '.' : null
+}
+
+function savedAgo(iso: string): string {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  return mins < 2 ? 'just now' : relativeLabel(iso)
 }
 
 function localZone(): string {
@@ -106,10 +112,12 @@ export function MyWeek() {
 
   const sourceLabel =
     week.source === 'live'
-      ? 'TheSportsDB (near-live)'
+      ? 'Live fixtures'
       : week.source === 'mixed'
-        ? 'TheSportsDB + seed (favorites-complete)'
-        : 'Seeded fixtures (offline-safe)'
+        ? 'Live fixtures + saved'
+        : week.source === 'cached'
+          ? `Saved ${savedAgo(week.fetchedAt)}`
+          : 'Bundled sample week'
 
   return (
     <div>
@@ -155,7 +163,7 @@ export function MyWeek() {
         {coverage.total > 0 && gapsLine(coverage) ? <p className="hero-gaps">{gapsLine(coverage)}</p> : null}
         <div className="hero-meta mono-label light">
           {follows.length} followed teams — {sourceLabel} —{' '}
-          <button className="text-btn" type="button" onClick={() => void refresh()}>
+          <button className="text-btn" type="button" onClick={() => void refresh(true)}>
             Refresh
           </button>
         </div>
@@ -184,6 +192,13 @@ export function MyWeek() {
               <li key={line}>{line}</li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {follows.length > 0 && week.fixtures.length > 0 ? (
+        <section aria-label="Your clubs">
+          <div className="date-head">Your clubs</div>
+          <ClubStrip follows={follows} fixtures={week.fixtures} subscribed={subscribed} />
         </section>
       ) : null}
 

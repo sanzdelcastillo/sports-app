@@ -89,6 +89,8 @@ export interface Fixture {
   status: FixtureStatus
   statusDetail?: string
   mustWatch?: boolean
+  /** Season label from the data source, e.g. "2026-2027" or "2026". */
+  season?: string
 }
 
 export interface NewsItem {
@@ -127,4 +129,4 @@ export interface FixtureChange {
   detectedAt: string
 }
 
-export type DataSource = 'live' | 'seed' | 'mixed'
+export type DataSource = 'live' | 'cached' | 'seed' | 'mixed'

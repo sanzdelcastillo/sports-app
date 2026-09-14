@@ -11,7 +11,7 @@ import { SEED_FOLLOW_IDS } from '../data/teams'
 import type { DestinationId, Fixture, FixtureChange, Reminder, SeenMap } from '../domain/types'
 import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
 import { readJson, writeJson } from '../lib/storage'
-import { loadFollowedWeek, seedWeek, type WeekResult } from '../services/fixtures'
+import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
 
 const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
@@ -44,7 +44,8 @@ interface AppState {
   markWatched: (fixtureId: string) => void
   week: WeekResult
   loading: boolean
-  refresh: () => Promise<void>
+  /** Fetch what's stale. `force` re-fetches every club (manual Refresh). */
+  refresh: (force?: boolean) => Promise<void>
   allFixtures: Fixture[]
 }
 
@@ -68,11 +69,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     readJson<FixtureChange[]>(CHANGES_KEY, []),
   )
   const [watchLater, setWatchLater] = useState<string[]>(() => readJson<string[]>(LATER_KEY, []))
-  const [week, setWeek] = useState<WeekResult>(() => ({
-    fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS)),
-    source: 'seed',
-    fetchedAt: new Date().toISOString(),
-  }))
+  const [week, setWeek] = useState<WeekResult>(() => {
+    const lastGood = readLastGood()
+    return {
+      fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS)),
+      source: lastGood ? 'cached' : 'seed',
+      fetchedAt: lastGood?.fetchedAt ?? new Date().toISOString(),
+    }
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => writeJson(FOLLOWS_KEY, follows), [follows])
@@ -83,9 +87,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
   useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     setLoading(true)
-    const next = await loadFollowedWeek(follows)
+    const next = await loadFollowedWeek(follows, force ? follows : staleTeams(follows))
     setWeek(next)
     // Only trust live data for change detection — seed fixtures are a stale snapshot by design.
     if (next.source === 'live') {

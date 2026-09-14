@@ -21,6 +21,7 @@ interface SportsDbEvent {
   strStatus?: string | null
   strVenue?: string | null
   strProgress?: string | null
+  strSeason?: string | null
 }
 
 function toIso(event: SportsDbEvent): string | null {
@@ -91,13 +92,40 @@ export function mapEvent(event: SportsDbEvent): Fixture | null {
     awayScore: parseScore(event.intAwayScore),
     status: mapStatus(event.strStatus),
     statusDetail: event.strProgress || event.strStatus || undefined,
+    season: event.strSeason || undefined,
   }
 }
 
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`TheSportsDB ${res.status}`)
-  return (await res.json()) as T
+/** The free tier allows roughly 30 requests a minute, so requests are spaced out and 429s retried once. */
+const GAP_MS = 250
+let chain: Promise<unknown> = Promise.resolve()
+
+function spaced<T>(task: () => Promise<T>): Promise<T> {
+  const run = chain.then(() => new Promise<void>((r) => setTimeout(r, GAP_MS))).then(task)
+  chain = run.catch(() => undefined)
+  return run
+}
+
+export class RateLimited extends Error {
+  constructor() {
+    super('The data source is busy right now')
+    this.name = 'RateLimited'
+  }
+}
+
+export async function getJson<T>(url: string, retry = true): Promise<T> {
+  return spaced(async () => {
+    const res = await fetch(url)
+    if (res.status === 429) {
+      if (retry) {
+        await new Promise((r) => setTimeout(r, 2500))
+        return getJson<T>(url, false)
+      }
+      throw new RateLimited()
+    }
+    if (!res.ok) throw new Error(`TheSportsDB ${res.status}`)
+    return (await res.json()) as T
+  })
 }
 
 export async function fetchTeamEvents(sportsDbId: string): Promise<Fixture[]> {

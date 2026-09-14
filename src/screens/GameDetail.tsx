@@ -4,6 +4,7 @@ import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { ChangeBadge, SaveLaterButton, Scoreboard } from '../components/GameCard'
 import { CalendarPlusIcon, ClockIcon } from '../components/icons'
+import { LineupsPanel, TablePanel } from '../components/MatchExtras'
 import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
@@ -14,7 +15,15 @@ import { fixtureById } from '../services/fixtures'
 import { newsForFixture } from '../services/news'
 import { useAppState } from '../stores/AppState'
 
-type Tab = 'watch' | 'remind' | 'news'
+type Tab = 'watch' | 'lineups' | 'table' | 'plan' | 'news'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'watch', label: 'Watch' },
+  { id: 'lineups', label: 'Lineups' },
+  { id: 'table', label: 'Table' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'news', label: 'News' },
+]
 
 const reviewedShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
   new Date(`${RIGHTS_REVIEWED_ON}T12:00:00Z`),
@@ -89,16 +98,19 @@ export function GameDetail() {
         </div>
       </article>
 
-      <div className="tabs" role="tablist" aria-label="Game details">
-        <button type="button" className="tab" role="tab" aria-selected={tab === 'watch'} onClick={() => setTab('watch')}>
-          Watch
-        </button>
-        <button type="button" className="tab" role="tab" aria-selected={tab === 'remind'} onClick={() => setTab('remind')}>
-          Remind
-        </button>
-        <button type="button" className="tab" role="tab" aria-selected={tab === 'news'} onClick={() => setTab('news')}>
-          News
-        </button>
+      <div className="tabs five" role="tablist" aria-label="Game details">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className="tab"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === 'watch' ? (
@@ -134,7 +146,21 @@ export function GameDetail() {
         </section>
       ) : null}
 
-      {tab === 'remind' ? (
+      {tab === 'lineups' ? (
+        <section>
+          <h2 className="display-head">Lineups</h2>
+          <LineupsPanel fixture={fixture} />
+        </section>
+      ) : null}
+
+      {tab === 'table' ? (
+        <section>
+          <h2 className="display-head">Table and form</h2>
+          <TablePanel fixture={fixture} />
+        </section>
+      ) : null}
+
+      {tab === 'plan' ? (
         <section className="card">
           <h2 className="display-head">Device reminder</h2>
           <p className="disclaimer">

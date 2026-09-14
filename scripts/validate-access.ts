@@ -7,6 +7,8 @@ import type { DestinationId, Fixture, LeagueId } from '../src/domain/types'
 import { diffWeek, mergeChanges, snapshotWeek } from '../src/lib/changes'
 import { buildIcs, escapeIcs } from '../src/lib/ics'
 import { buildWeekText } from '../src/lib/shareWeek'
+import { favoritesComplete } from '../src/services/fixtures'
+import { groupLineup, seasonFor, shapeOf } from '../src/services/matchExtras'
 
 let failures = 0
 function expect(condition: boolean, message: string) {
@@ -100,6 +102,33 @@ expect(ics.includes('Peacock (in your apps)'), 'access note in description')
 expect(ics.split('BEGIN:VEVENT').length - 1 === 2, 'one VEVENT per fixture')
 expect(escapeIcs('a,b;c\nd') === 'a\\,b\\;c\\nd', 'escapes commas, semicolons, newlines')
 expect(ics.split('\r\n').every((line) => line.length <= 75), 'no line exceeds 75 characters')
+
+console.log('Last-good cache and merge precedence')
+const seedLike = fixture('same-id', 'epl', 'Premier League')
+const liveMoved = { ...seedLike, kickoffUtc: '2026-09-19T16:30:00Z' }
+const win = favoritesComplete([liveMoved], ['ars'], new Date('2026-09-18T00:00:00Z'), new Date('2026-09-21T00:00:00Z'), [seedLike])
+expect(win.fixtures.find((f) => f.id === 'same-id')?.kickoffUtc === liveMoved.kickoffUtc, 'live kickoff beats cached copy of the same game')
+const offline = favoritesComplete([], ['ars'], new Date('2026-09-18T00:00:00Z'), new Date('2026-09-21T00:00:00Z'), [seedLike])
+expect(offline.fixtures.some((f) => f.id === 'same-id'), 'cached fixtures fill the week when live is empty')
+
+console.log('Seasons, lineups, shape')
+expect(seasonFor('epl', '2026-09-19T14:00:00Z') === '2026-2027', 'September → 2026-2027 for European leagues')
+expect(seasonFor('laliga', '2027-03-01T14:00:00Z') === '2026-2027', 'March → still 2026-2027')
+expect(seasonFor('mls', '2026-09-19T14:00:00Z') === '2026', 'MLS uses the calendar year')
+const raw = [
+  { idPlayer: '1', strPlayer: 'Keeper', strPosition: 'Goalkeeper', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: '1' },
+  ...['2', '3', '4', '5'].map((n) => ({ idPlayer: n, strPlayer: `Def ${n}`, strPosition: 'Defender', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
+  ...['6', '7', '8'].map((n) => ({ idPlayer: n, strPlayer: `Mid ${n}`, strPosition: 'Midfielder', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
+  ...['9', '10', '11'].map((n) => ({ idPlayer: n, strPlayer: `Fwd ${n}`, strPosition: 'Forward', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
+  { idPlayer: '12', strPlayer: 'Sub', strPosition: 'Midfielder', strHome: 'Yes', strSubstitute: 'Yes', intSquadNumber: '12' },
+  { idPlayer: '21', strPlayer: 'Away GK', strPosition: 'Goalkeeper', strHome: 'No', strSubstitute: 'No', intSquadNumber: '1' },
+]
+const grouped = groupLineup(raw)
+expect(grouped.home.starters.length === 11 && grouped.home.bench.length === 1, 'home starters and bench split')
+expect(grouped.home.shape === '4-3-3', 'shape counted as 4-3-3')
+expect(grouped.home.starters[0].slot === 'GK', 'goalkeeper listed first')
+expect(grouped.away.starters.length === 1 && grouped.away.shape === null, 'incomplete away eleven has no shape')
+expect(shapeOf([]) === null, 'empty lineup has no shape')
 
 if (failures) {
   console.log(`\n${failures} check(s) failed`)
