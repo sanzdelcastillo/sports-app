@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { AlertIcon, CalendarIcon, ClockIcon, NewsIcon, UserIcon } from './icons'
+import { AlertIcon, CalendarIcon, GearIcon, TvIcon, UserIcon } from './icons'
 
 const ITEMS = [
   { to: '/', label: 'My Week', icon: CalendarIcon, end: true },
-  { to: '/news', label: 'News', icon: NewsIcon },
-  { to: '/remind', label: 'Remind', icon: ClockIcon },
   { to: '/conflicts', label: 'Conflicts', icon: AlertIcon },
-  { to: '/follows', label: 'Follows', icon: UserIcon },
+  { to: '/clubs', label: 'Clubs', icon: UserIcon },
+  { to: '/watch', label: 'Apps', icon: TvIcon },
+  { to: '/settings', label: 'Settings', icon: GearIcon },
 ] as const
 
 export function BottomNav() {

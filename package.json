@@ -1,9 +1,9 @@
 {
-  "name": "sports-fan-planner",
+  "name": "watchplan",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "description": "Where to watch followed soccer \u2014 never streams games.",
+  "description": "Watch Plan \u2014 the week's games for the clubs you follow, with where to watch. Never streams video.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

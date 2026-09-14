@@ -64,6 +64,19 @@ export const LEAGUES: Record<LeagueId, League> = {
     accent: '#006633',
     sportsDbId: '4344',
   },
+  eflcup: { id: 'eflcup', name: 'EFL Cup', shortName: 'EFL Cup', accent: '#0A3D62', sportsDbId: '4570' },
+  facup: { id: 'facup', name: 'FA Cup', shortName: 'FA Cup', accent: '#B4172D', sportsDbId: '4482' },
+  communityshield: { id: 'communityshield', name: 'Community Shield', shortName: 'Comm. Shield', accent: '#B4172D', sportsDbId: '4571' },
+  uel: { id: 'uel', name: 'UEFA Europa League', shortName: 'UEL', accent: '#F58220', sportsDbId: '4481' },
+  uecl: { id: 'uecl', name: 'UEFA Conference League', shortName: 'UECL', accent: '#2F7D32', sportsDbId: '5071' },
+  uefasupercup: { id: 'uefasupercup', name: 'UEFA Super Cup', shortName: 'Super Cup', accent: '#1B2A6B', sportsDbId: '4512' },
+  copadelrey: { id: 'copadelrey', name: 'Copa del Rey', shortName: 'Copa del Rey', accent: '#C8102E', sportsDbId: '4483' },
+  supercopa: { id: 'supercopa', name: 'Supercopa de España', shortName: 'Supercopa', accent: '#C8102E', sportsDbId: '4511' },
+  coppaitalia: { id: 'coppaitalia', name: 'Coppa Italia', shortName: 'Coppa Italia', accent: '#024494', sportsDbId: '4506' },
+  supercoppa: { id: 'supercoppa', name: 'Supercoppa Italiana', shortName: 'Supercoppa', accent: '#024494', sportsDbId: '4507' },
+  dfbpokal: { id: 'dfbpokal', name: 'DFB-Pokal', shortName: 'DFB-Pokal', accent: '#000000', sportsDbId: '4485' },
+  leaguescup: { id: 'leaguescup', name: 'Leagues Cup', shortName: 'Leagues Cup', accent: '#FF6A00', sportsDbId: '5281' },
+  usopencup: { id: 'usopencup', name: 'U.S. Open Cup', shortName: 'Open Cup', accent: '#0B3D91', sportsDbId: '5199' },
   other: {
     id: 'other',
     name: 'Soccer',
@@ -82,6 +95,19 @@ const SPORTSDB_LEAGUE: Record<string, LeagueId> = {
   '4331': 'bundesliga',
   '4337': 'eredivisie',
   '4344': 'primeira',
+  '4570': 'eflcup',
+  '4482': 'facup',
+  '4571': 'communityshield',
+  '4481': 'uel',
+  '5071': 'uecl',
+  '4512': 'uefasupercup',
+  '4483': 'copadelrey',
+  '4511': 'supercopa',
+  '4506': 'coppaitalia',
+  '4507': 'supercoppa',
+  '4485': 'dfbpokal',
+  '5281': 'leaguescup',
+  '5199': 'usopencup',
 }
 
 export function leagueFromSportsDb(
@@ -90,7 +116,16 @@ export function leagueFromSportsDb(
 ): LeagueId {
   if (idLeague && SPORTSDB_LEAGUE[idLeague]) return SPORTSDB_LEAGUE[idLeague]
   const n = (name ?? '').toLowerCase()
-  if (n.includes('champion')) return 'ucl'
+  if (n.includes('champions league')) return 'ucl'
+  if (n.includes('europa league')) return 'uel'
+  if (n.includes('conference league')) return 'uecl'
+  if (n.includes('efl cup') || n.includes('carabao') || n.includes('league cup')) return 'eflcup'
+  if (n.includes('fa cup')) return 'facup'
+  if (n.includes('copa del rey')) return 'copadelrey'
+  if (n.includes('coppa italia')) return 'coppaitalia'
+  if (n.includes('dfb')) return 'dfbpokal'
+  if (n.includes('leagues cup')) return 'leaguescup'
+  if (n.includes('open cup')) return 'usopencup'
   if (n.includes('premier')) return 'epl'
   if (n.includes('la liga') || n.includes('spanish')) return 'laliga'
   if (n.includes('serie')) return 'seriea'

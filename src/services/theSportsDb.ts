@@ -1,5 +1,5 @@
-import { leagueFromSportsDb } from '../data/leagues'
-import { resolveTeam, TEAM_BY_SPORTSDB } from '../data/teams'
+import { LEAGUES, leagueFromSportsDb } from '../data/leagues'
+import { resolveTeam, teamBySportsDb } from '../data/teams'
 import type { Fixture, FixtureStatus, Team } from '../domain/types'
 
 /** All calls go through our proxy so the premium key stays on the server. */
@@ -64,7 +64,10 @@ function parseScore(value?: string | null): number | null {
 }
 
 function teamFromEvent(id?: string, name?: string): Team | undefined {
-  if (id && TEAM_BY_SPORTSDB[id]) return TEAM_BY_SPORTSDB[id]
+  if (id) {
+    const known = teamBySportsDb(id)
+    if (known) return known
+  }
   if (name) return resolveTeam(name)
   return undefined
 }
@@ -76,12 +79,7 @@ export function mapEvent(event: SportsDbEvent): Fixture | null {
   if (!home || !away || !kickoffUtc || !event.idEvent) return null
 
   const leagueId = leagueFromSportsDb(event.idLeague, event.strLeague)
-  const leagueName =
-    leagueId === 'ucl'
-      ? 'UEFA Champions League'
-      : leagueId === 'mls'
-        ? 'MLS'
-        : event.strLeague || 'Soccer'
+  const leagueName = leagueId === 'other' ? event.strLeague || 'Soccer' : LEAGUES[leagueId].name
 
   return {
     id: event.idEvent,

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Team } from '../domain/types'
+import { useAppState } from '../stores/AppState'
 
 interface Props {
   team?: Team
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function TeamCrest({ team, size = 'md' }: Props) {
+  const { showCrests } = useAppState()
   const [failed, setFailed] = useState<'primary' | 'all' | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [crestKey, setCrestKey] = useState(team?.id)
@@ -21,10 +23,10 @@ export function TeamCrest({ team, size = 'md' }: Props) {
   const sportsDb = team?.badgeUrl
   const primary = espn ?? sportsDb
   const secondary = espn && sportsDb && espn !== sportsDb ? sportsDb : undefined
-  const src = failed === 'primary' ? secondary : failed === 'all' ? undefined : primary
+  const src = !showCrests ? undefined : failed === 'primary' ? secondary : failed === 'all' ? undefined : primary
 
   return (
-    <div className={`crest ${size}`} aria-hidden={!team}>
+    <div className={`crest ${size}${!showCrests ? ' text' : ''}`} aria-hidden={!team} style={!showCrests && team ? { background: team.color, borderColor: team.color } : undefined}>
       {src ? (
         <img
           src={src}
@@ -38,7 +40,7 @@ export function TeamCrest({ team, size = 'md' }: Props) {
           }}
         />
       ) : null}
-      {!loaded ? <span className="crest-fallback">{team?.shortName ?? '?'}</span> : null}
+      {!loaded || !showCrests ? <span className="crest-fallback">{team?.shortName ?? '?'}</span> : null}
     </div>
   )
 }

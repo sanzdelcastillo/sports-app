@@ -1,36 +1,45 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
+import { Clubs } from './screens/Clubs'
 import { Conflicts } from './screens/Conflicts'
-import { Follows } from './screens/Follows'
 import { GameDetail } from './screens/GameDetail'
 import { MyWeek } from './screens/MyWeek'
-import { News } from './screens/News'
-import { Remind } from './screens/Remind'
+import { Settings } from './screens/Settings'
 import { ShareWeek } from './screens/ShareWeek'
 import { Watch } from './screens/Watch'
+import { Welcome } from './screens/Welcome'
+import { useAppState } from './stores/AppState'
 
 export default function App() {
   const location = useLocation()
+  const { onboarded } = useAppState()
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
+  if (!onboarded && location.pathname !== '/welcome') {
+    return <Navigate to="/welcome" replace />
+  }
+
+  const inWelcome = location.pathname === '/welcome'
+
   return (
     <div className="app-shell">
       <Routes>
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/" element={<MyWeek />} />
         <Route path="/game/:id" element={<GameDetail />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/remind" element={<Remind />} />
         <Route path="/conflicts" element={<Conflicts />} />
-        <Route path="/follows" element={<Follows />} />
+        <Route path="/clubs" element={<Clubs />} />
+        <Route path="/follows" element={<Navigate to="/clubs" replace />} />
         <Route path="/watch" element={<Watch />} />
         <Route path="/share" element={<ShareWeek />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <BottomNav />
+      {inWelcome ? null : <BottomNav />}
     </div>
   )
 }

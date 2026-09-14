@@ -7,17 +7,19 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { SEED_FOLLOW_IDS } from '../data/teams'
-import type { DestinationId, Fixture, FixtureChange, Reminder, SeenMap } from '../domain/types'
+import type { DestinationId, Fixture, FixtureChange, SeenMap } from '../domain/types'
 import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
+import { type Setup } from '../lib/setupCode'
 import { readJson, writeJson } from '../lib/storage'
+import { bootTeams, rememberCustomTeams } from '../services/clubs'
 import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
 import { anyInPlay, applyLive, fetchLiveSoccer } from '../services/livescores'
 
 const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
-const REMIND_KEY = 'sfp.reminders.v1'
 const SPOILER_KEY = 'sfp.hideScores.v1'
+const CRESTS_KEY = 'sfp.showCrests.v1'
+const ONBOARDED_KEY = 'sfp.onboarded.v1'
 const SEEN_KEY = 'sfp.seen.v1'
 const CHANGES_KEY = 'sfp.changes.v1'
 const LATER_KEY = 'sfp.watchLater.v1'
@@ -28,12 +30,19 @@ interface AppState {
   toggleFollow: (teamId: string) => void
   subscribed: DestinationId[]
   toggleSubscription: (id: DestinationId) => void
-  reminders: Reminder[]
-  hasReminder: (fixtureId: string) => boolean
-  toggleReminder: (fixtureId: string) => void
   /** Spoiler protection: hide scores for live and finished games until revealed. */
   hideScores: boolean
   toggleHideScores: () => void
+  /** Club crests and player photos on; off shows text badges only. */
+  showCrests: boolean
+  toggleShowCrests: () => void
+  /** First-run flow finished. */
+  onboarded: boolean
+  finishOnboarding: () => void
+  /** Replace follows, apps and saved games in one go (setup code, restore). */
+  applySetup: (setup: Setup) => void
+  /** Wipe everything this app stored on the device. */
+  clearAll: () => void
   /** Kickoff moves and postponements spotted since the last visit, until dismissed. */
   changes: FixtureChange[]
   changeFor: (fixtureId: string) => FixtureChange | undefined
@@ -55,18 +64,16 @@ interface AppState {
 const Ctx = createContext<AppState | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [follows, setFollows] = useState<string[]>(() =>
-    readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS),
-  )
+  bootTeams()
+  const [follows, setFollows] = useState<string[]>(() => readJson<string[]>(FOLLOWS_KEY, []))
   const [subscribed, setSubscribed] = useState<DestinationId[]>(() =>
-    readJson<DestinationId[]>(SUBS_KEY, ['apple-tv-mls']),
-  )
-  const [reminders, setReminders] = useState<Reminder[]>(() =>
-    readJson<Reminder[]>(REMIND_KEY, []),
+    readJson<DestinationId[]>(SUBS_KEY, []),
   )
   const [hideScores, setHideScores] = useState<boolean>(() =>
     readJson<boolean>(SPOILER_KEY, false),
   )
+  const [showCrests, setShowCrests] = useState<boolean>(() => readJson<boolean>(CRESTS_KEY, true))
+  const [onboarded, setOnboarded] = useState<boolean>(() => readJson<boolean>(ONBOARDED_KEY, false))
   const [seen, setSeen] = useState<SeenMap>(() => readJson<SeenMap>(SEEN_KEY, {}))
   const [changes, setChanges] = useState<FixtureChange[]>(() =>
     readJson<FixtureChange[]>(CHANGES_KEY, []),
@@ -75,7 +82,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [week, setWeek] = useState<WeekResult>(() => {
     const lastGood = readLastGood()
     return {
-      fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS)),
+      fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, [])),
       source: lastGood ? 'cached' : 'seed',
       fetchedAt: lastGood?.fetchedAt ?? new Date().toISOString(),
     }
@@ -83,10 +90,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [liveFeed, setLiveFeed] = useState<'unknown' | 'on' | 'off'>('unknown')
 
-  useEffect(() => writeJson(FOLLOWS_KEY, follows), [follows])
+  useEffect(() => {
+    writeJson(FOLLOWS_KEY, follows)
+    rememberCustomTeams(follows)
+  }, [follows])
   useEffect(() => writeJson(SUBS_KEY, subscribed), [subscribed])
-  useEffect(() => writeJson(REMIND_KEY, reminders), [reminders])
   useEffect(() => writeJson(SPOILER_KEY, hideScores), [hideScores])
+  useEffect(() => writeJson(CRESTS_KEY, showCrests), [showCrests])
+  useEffect(() => writeJson(ONBOARDED_KEY, onboarded), [onboarded])
   useEffect(() => writeJson(SEEN_KEY, seen), [seen])
   useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
   useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
@@ -147,15 +158,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
-  const toggleReminder = useCallback((fixtureId: string) => {
-    setReminders((prev) => {
-      const exists = prev.some((r) => r.fixtureId === fixtureId)
-      if (exists) return prev.filter((r) => r.fixtureId !== fixtureId)
-      return [...prev, { fixtureId, createdAt: new Date().toISOString() }]
-    })
+  const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
+  const toggleShowCrests = useCallback(() => setShowCrests((prev) => !prev), [])
+  const finishOnboarding = useCallback(() => setOnboarded(true), [])
+
+  const applySetup = useCallback((setup: Setup) => {
+    setFollows(setup.follows)
+    setSubscribed(setup.subscribed)
+    setWatchLater(setup.watchLater)
+    setHideScores(setup.hideScores)
+    setOnboarded(true)
   }, [])
 
-  const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
+  const clearAll = useCallback(() => {
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('sfp.'))
+        .forEach((k) => localStorage.removeItem(k))
+    } catch {
+      /* ignore */
+    }
+    window.location.assign('/')
+  }, [])
 
   const changeFor = useCallback(
     (fixtureId: string) => changes.find((c) => c.fixtureId === fixtureId),
@@ -173,11 +197,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setWatchLater((prev) => prev.filter((id) => id !== fixtureId))
   }, [])
 
-  const hasReminder = useCallback(
-    (fixtureId: string) => reminders.some((r) => r.fixtureId === fixtureId),
-    [reminders],
-  )
-
   const followSet = useMemo(() => new Set(follows), [follows])
 
   const value = useMemo<AppState>(
@@ -187,11 +206,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleFollow,
       subscribed,
       toggleSubscription,
-      reminders,
-      hasReminder,
-      toggleReminder,
       hideScores,
       toggleHideScores,
+      showCrests,
+      toggleShowCrests,
+      onboarded,
+      finishOnboarding,
+      applySetup,
+      clearAll,
       changes,
       changeFor,
       dismissChanges,
@@ -211,11 +233,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleFollow,
       subscribed,
       toggleSubscription,
-      reminders,
-      hasReminder,
-      toggleReminder,
       hideScores,
       toggleHideScores,
+      showCrests,
+      toggleShowCrests,
+      onboarded,
+      finishOnboarding,
+      applySetup,
+      clearAll,
       changes,
       changeFor,
       dismissChanges,

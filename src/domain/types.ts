@@ -12,6 +12,19 @@ export type LeagueId =
   | 'bundesliga'
   | 'eredivisie'
   | 'primeira'
+  | 'eflcup'
+  | 'facup'
+  | 'communityshield'
+  | 'uel'
+  | 'uecl'
+  | 'uefasupercup'
+  | 'copadelrey'
+  | 'supercopa'
+  | 'coppaitalia'
+  | 'supercoppa'
+  | 'dfbpokal'
+  | 'leaguescup'
+  | 'usopencup'
   | 'other'
 
 export type DestinationId =
@@ -91,21 +104,6 @@ export interface Fixture {
   mustWatch?: boolean
   /** Season label from the data source, e.g. "2026-2027" or "2026". */
   season?: string
-}
-
-export interface NewsItem {
-  id: string
-  teamIds: string[]
-  headline: string
-  summary: string
-  source: string
-  url: string
-  publishedAt: string
-}
-
-export interface Reminder {
-  fixtureId: string
-  createdAt: string
 }
 
 /** Compact record of a fixture as last seen, used to spot schedule changes between visits. */

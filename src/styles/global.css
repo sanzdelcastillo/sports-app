@@ -1772,3 +1772,241 @@ h3 {
   color: var(--paper-hi);
   border-color: rgba(251, 248, 240, 0.45);
 }
+
+/* ---------- Text-badge crests (images off) ---------- */
+
+.crest.text .crest-fallback {
+  color: #fff;
+  mix-blend-mode: difference;
+  font-size: 10px;
+}
+
+/* ---------- Four tabs ---------- */
+
+.tabs.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* ---------- Search and chips ---------- */
+
+.search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--paper-hi);
+  color: var(--ink);
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.search:focus {
+  outline: 2px solid var(--pitch);
+  outline-offset: 1px;
+  border-color: var(--pitch);
+}
+
+.league-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  margin: 0 -2px 4px;
+  scrollbar-width: none;
+}
+
+.league-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.league-chip {
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--paper-hi);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.league-chip.on {
+  background: var(--pitch-deep);
+  border-color: var(--pitch-deep);
+  color: var(--paper-hi);
+}
+
+.followed-strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.followed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
+  border: 1px solid var(--pitch-deep);
+  background: var(--pitch-soft);
+  color: var(--pitch-deep);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.followed-chip .crest {
+  width: 26px;
+  height: 26px;
+}
+
+.followed-chip .crest img {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Club grid ---------- */
+
+.club-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.club-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--paper-hi);
+  color: var(--ink);
+  text-align: center;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+
+.club-card.on {
+  border-color: var(--pitch-deep);
+  background: var(--pitch-soft);
+}
+
+.club-card-name {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.05;
+  min-height: 2.1em;
+  display: flex;
+  align-items: center;
+}
+
+.club-card-state {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.club-card.on .club-card-state {
+  color: var(--pitch-deep);
+  font-weight: 600;
+}
+
+/* ---------- Welcome ---------- */
+
+.welcome {
+  padding-bottom: 96px;
+}
+
+.welcome-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 calc(12px + var(--safe-b));
+  background: linear-gradient(to top, var(--paper) 70%, rgba(243, 239, 228, 0));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.welcome-back {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.cta:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.app-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.app-row.on {
+  border-color: var(--pitch-deep);
+}
+
+.app-row .meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-name {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-blurb {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+}
+
+/* ---------- Settings ---------- */
+
+.setup-code {
+  font-size: 11px;
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+
+.paste-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.paste-row .search {
+  margin: 0;
+  flex: 1;
+}
+
+.about p {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+}
+
+.about p:last-child {
+  margin-bottom: 0;
+}

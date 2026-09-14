@@ -9,7 +9,9 @@ import { buildIcs, escapeIcs } from '../src/lib/ics'
 import { buildWeekText } from '../src/lib/shareWeek'
 import { favoritesComplete } from '../src/services/fixtures'
 import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
-import { groupLineup, seasonFor, shapeOf } from '../src/services/matchExtras'
+import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/services/matchExtras'
+import { mapClub } from '../src/services/clubs'
+import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 
 let failures = 0
 function expect(condition: boolean, message: string) {
@@ -96,7 +98,7 @@ expect(!('stale' in old), 'snapshot drops entries older than two weeks')
 console.log('Calendar file')
 const ics = buildIcs([epl, buli], ['peacock'], 'My Week', new Date('2026-09-14T00:00:00Z'))
 expect(ics.startsWith('BEGIN:VCALENDAR\r\n'), 'starts with VCALENDAR')
-expect(ics.includes('UID:epl-1@sports-fan-planner'), 'UID is the stable fixture id')
+expect(ics.includes('UID:epl-1@watchplan.app'), 'UID is the stable fixture id')
 expect(ics.includes('DTSTART:20260919T140000Z'), 'kickoff written in UTC')
 expect(ics.includes('DURATION:PT2H'), 'two-hour duration')
 expect(ics.includes('Peacock (in your apps)'), 'access note in description')
@@ -151,6 +153,33 @@ expect(applyLive(same, []) === same, 'empty update returns the same array')
 expect(anyInPlay([epl], new Date('2026-09-19T14:30:00Z')), 'thirty minutes after kickoff counts as in play')
 expect(!anyInPlay([epl], new Date('2026-09-19T18:00:00Z')), 'four hours after kickoff does not')
 expect(!anyInPlay([{ ...epl, status: 'final' }], new Date('2026-09-19T14:30:00Z')), 'finished games never poll')
+
+console.log('TV listings and language')
+const tv = mapTv([
+  { strCountry: 'United States', strChannel: 'Peacock', strTime: '14:00:00' },
+  { strCountry: 'United States', strChannel: 'Telemundo' },
+  { strCountry: 'United Kingdom', strChannel: 'Sky Sports' },
+  { strCountry: 'USA', strChannel: 'peacock' },
+])
+expect(tv.length === 2, 'only U.S. listings kept, duplicates by channel collapsed')
+expect(tv.find((l) => l.channel === 'Telemundo')?.language === 'es', 'Telemundo tagged Spanish')
+expect(languageOf('ESPN Deportes') === 'es' && languageOf('CBS Sports Network') === 'en', 'language heuristic')
+
+console.log('Club catalogue')
+const club = mapClub({ idTeam: '133600', strTeam: 'Fulham', strTeamShort: 'FUL', strBadge: 'https://x/badge.png', strCountry: 'England' }, 'epl')
+expect(club?.id === 't133600' && club.shortName === 'FUL', 'feed-only club gets a stable id and short name')
+const known = mapClub({ idTeam: '133604', strTeam: 'Arsenal', strTeamShort: 'ARS' }, 'epl')
+expect(known?.id === 'ars', 'a club already in the core keeps its core id')
+expect(mapClub({ idTeam: '1', strTeam: 'Real Salt Lake' }, 'mls')?.shortName === 'RSL', 'short name derived from initials when missing')
+
+console.log('Setup code')
+const setup = { follows: ['ars', 't133600'], subscribed: ['peacock' as const], watchLater: ['x1'], hideScores: true }
+const code = encodeSetup(setup)
+expect(code.startsWith('WP1.') && !code.includes('+') && !code.includes('/'), 'code is prefixed and URL-safe')
+const back = decodeSetup(code)
+expect(JSON.stringify(back) === JSON.stringify(setup), 'setup survives a round trip')
+expect(decodeSetup('garbage') === null && decodeSetup('WP1.@@@') === null, 'bad codes are rejected')
+expect(decodeSetup(encodeSetup({ ...setup, subscribed: ['nope' as never] }))?.subscribed.length === 0, 'unknown apps are dropped on restore')
 
 if (failures) {
   console.log(`\n${failures} check(s) failed`)

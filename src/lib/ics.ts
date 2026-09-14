@@ -4,8 +4,8 @@ import { accessFor, RIGHTS_REVIEWED_ON } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
 import { parseUtc } from './time'
 
-const PRODID = '-//Sports Fan Planner//Week//EN'
-const UID_DOMAIN = 'sports-fan-planner'
+const PRODID = '-//Watch Plan//Week//EN'
+const UID_DOMAIN = 'watchplan.app'
 
 function stamp(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')

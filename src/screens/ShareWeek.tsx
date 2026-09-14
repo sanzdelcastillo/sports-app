@@ -45,7 +45,7 @@ export function ShareWeek() {
       </Link>
       <h1 className="page-title">Share my week</h1>
       <p className="disclaimer">
-        Plain text, ready to paste into a text or email. Kickoffs in U.S. Eastern with where to watch.
+        Plain text, ready to paste into a text or email. Kickoffs in your time zone with where to watch in the U.S.
       </p>
 
       <label className="card option-row">

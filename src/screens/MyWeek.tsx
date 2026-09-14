@@ -222,9 +222,9 @@ export function MyWeek() {
       {follows.length === 0 ? (
         <EmptyState
           title="Follow clubs to fill your week"
-          body="My Week only lists games for teams you follow. Seed Julio’s 11 from Follows."
-          actionTo="/follows"
-          actionLabel="Go to Follows"
+          body="My Week only lists games for the clubs you follow."
+          actionTo="/clubs"
+          actionLabel="Choose clubs"
         />
       ) : loading && week.fixtures.length === 0 ? (
         <div className="stack" aria-busy="true" aria-label="Loading this week">
@@ -239,8 +239,8 @@ export function MyWeek() {
             <EmptyState
               title="No followed-team fixtures in this window"
               body="Nothing live or upcoming for your clubs in the next ~7 days. Try Refresh, or add another club."
-              actionTo="/follows"
-              actionLabel="Go to Follows"
+              actionTo="/clubs"
+              actionLabel="Choose clubs"
             />
           ) : (
             <>

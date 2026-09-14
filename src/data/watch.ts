@@ -99,14 +99,6 @@ export const PROVIDERS: Provider[] = [
   },
 ]
 
-export const JULIO_OWNED_IDS: DestinationId[] = [
-  'apple-tv-mls',
-  'espn-plus',
-  'peacock',
-  'paramount-plus',
-  'bein',
-]
-
 export const PROVIDER_BY_ID = Object.fromEntries(PROVIDERS.map((p) => [p.id, p])) as Record<
   DestinationId,
   Provider
@@ -126,6 +118,20 @@ const LEAGUE_PROVIDERS: Partial<Record<LeagueId, DestinationId[]>> = {
   bundesliga: ['fandango', 'usa-network'],
   eredivisie: ['espn-plus'],
   primeira: ['paramount-plus'],
+  // Cups and continental competitions
+  eflcup: ['paramount-plus', 'cbs-sports'],
+  facup: ['espn-plus'],
+  communityshield: ['espn-plus'],
+  uel: ['paramount-plus', 'cbs-sports'],
+  uecl: ['paramount-plus'],
+  uefasupercup: ['paramount-plus', 'cbs-sports'],
+  copadelrey: ['espn-plus'],
+  supercopa: ['espn-plus'],
+  coppaitalia: ['paramount-plus'],
+  supercoppa: ['paramount-plus'],
+  dfbpokal: ['espn-plus'],
+  leaguescup: ['apple-tv-mls'],
+  usopencup: ['paramount-plus'],
 }
 
 /** Destination badge — not the match ● LIVE pill. Live only when the match is in progress. */

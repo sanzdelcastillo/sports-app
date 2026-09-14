@@ -1,4 +1,17 @@
-export const DEFAULT_TIME_ZONE = 'America/New_York'
+/** The phone's own zone, with U.S. Eastern as a fallback for odd environments. */
+export const DEFAULT_TIME_ZONE = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'
+  } catch {
+    return 'America/New_York'
+  }
+})()
+
+/** Short zone label for copy, e.g. "EDT" or "GMT+1". */
+export function zoneAbbr(now = new Date(), timeZone = DEFAULT_TIME_ZONE): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(now)
+  return parts.find((p) => p.type === 'timeZoneName')?.value ?? timeZone
+}
 
 export function parseUtc(iso: string): Date {
   return new Date(iso)
@@ -53,7 +66,7 @@ export function formatVenueDate(iso: string, timeZone = DEFAULT_TIME_ZONE): stri
   }).format(parseUtc(iso))
 }
 
-/** Week window: US-Eastern today through +7 days, plus recent results from the last 2 days. */
+/** Week window: local today through +7 days, plus recent results from the last 2 days. */
 export function weekWindow(now = new Date(), timeZone = DEFAULT_TIME_ZONE): { start: Date; end: Date } {
   const dateKey = new Intl.DateTimeFormat('en-CA', {
     timeZone,

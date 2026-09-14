@@ -104,3 +104,24 @@ export function CalendarPlusIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function TvIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <rect x="3.5" y="6" width="17" height="12" rx="2.2" />
+      <path d="M8 21h8M9 3.5l3 2.5 3-2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function GearIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path
+        d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}

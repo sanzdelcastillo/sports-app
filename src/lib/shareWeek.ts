@@ -1,7 +1,7 @@
 import { getTeam } from '../data/teams'
 import { accessFor, RIGHTS_REVIEWED_ON } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
-import { formatKickoff } from './time'
+import { DEFAULT_TIME_ZONE, formatKickoff, zoneAbbr } from './time'
 
 export interface ShareOptions {
   /** Add "(in your apps)" / "(free)" / "(needs X)" after each destination. */
@@ -10,7 +10,7 @@ export interface ShareOptions {
 
 function longDate(iso: string): string {
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
+    timeZone: DEFAULT_TIME_ZONE,
     month: 'short',
     day: 'numeric',
   }).format(new Date(iso))
@@ -46,7 +46,7 @@ export function buildWeekText(
   const last = upcoming[upcoming.length - 1].kickoffUtc
   const range = longDate(first) === longDate(last) ? longDate(first) : `${longDate(first)} – ${longDate(last)}`
 
-  const lines: string[] = [`This week's games (${range}, U.S. Eastern)`, '']
+  const lines: string[] = [`This week's games (${range}, ${zoneAbbr(now)})`, '']
 
   let currentDay = ''
   for (const fixture of upcoming) {
@@ -69,7 +69,7 @@ export function buildWeekText(
   }
 
   const built = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
+    timeZone: DEFAULT_TIME_ZONE,
     weekday: 'short',
     month: 'short',
     day: 'numeric',

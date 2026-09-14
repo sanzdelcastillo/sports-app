@@ -1,6 +1,6 @@
-# Watch Plan (Sports Fan Planner)
+# Watch Plan
 
-Mobile-first planner for soccer fans. Production v1 answers three questions only:
+Mobile-first planner for soccer fans in the U.S. It answers three questions only:
 
 1. **What live / upcoming games do I care about?**
 2. **Where can I watch?** (opens a destination — never plays video here)
@@ -15,12 +15,12 @@ No monetization or pricing UI in v1.
 ## Screens
 
 - **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs: week stats, a "Your clubs" strip (each club's next game and whether you can reach it), schedule-change strip, catch-up-later queue, hide-scores toggle
-- **Game Detail** — scoreboard, then tabs: Watch (destinations), Lineups (real, when the source has them), Table (standings + last-five form for both clubs), Plan (reminder + calendar file), News
-- **Follows** — Julio’s 11 seed clubs plus more soccer; real public crests
+- **Game Detail** — scoreboard with highlight link when finished, then tabs: Watch (destinations + listed U.S. broadcasts), Lineups, Table (standings + form), Calendar (file export)
+- **Clubs** — follow any club in the supported leagues; full league lists come from the feed and are cached on device for a week
+- **Welcome** — first-run flow: pick clubs, tick apps, build the week
+- **Settings** — hide scores, crests on/off (text badges for image-rights-safe builds), move-my-setup code, About, erase data
 - **My apps** (`/watch`) — tick the services you pay for; free services are listed but never need ticking
 - **Share my week** (`/share`) — plain-text week (day, kickoff ET, matchup, where to watch) with Copy and native Share; never includes scores
-- **News** — follow-only notes (outbound links)
-- **Remind** — local device reminders (no push in v1)
 - **Conflicts** — overlapping kickoffs among followed clubs, with a suggested "watch live" / "catch up later" split
 
 ## Access labels
@@ -48,9 +48,6 @@ npm run lint          # oxlint
 npm run check:access  # access labels, coverage roll-up, share text, rights-map hygiene
 ```
 
-## Seed clubs (Julio’s 11)
-
-Inter Miami, LA Galaxy, Real Madrid, Atlético Madrid, Barcelona, Manchester City, Manchester United, Liverpool, Arsenal, Paris Saint-Germain, Inter Milan.
 
 ## Run locally
 

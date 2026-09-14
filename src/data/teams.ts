@@ -18,7 +18,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '137699',
     color: '#F7B5CD',
     colorSecondary: '#231F20',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -34,7 +33,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '134153',
     color: '#00245D',
     colorSecondary: '#FFD200',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -50,7 +48,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133738',
     color: '#FFFFFF',
     colorSecondary: '#00529F',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -66,7 +63,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133729',
     color: '#CB3524',
     colorSecondary: '#272E61',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -82,7 +78,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133739',
     color: '#004D98',
     colorSecondary: '#A50044',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -98,7 +93,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133613',
     color: '#6CABDD',
     colorSecondary: '#FFFFFF',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -114,7 +108,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133612',
     color: '#DA291C',
     colorSecondary: '#FFFFFF',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -130,7 +123,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133602',
     color: '#C8102E',
     colorSecondary: '#FFFFFF',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -146,7 +138,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133604',
     color: '#EF0107',
     colorSecondary: '#FFFFFF',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -162,7 +153,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133714',
     color: '#004170',
     colorSecondary: '#FFFFFF',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -178,7 +168,6 @@ export const TEAMS: Team[] = [
     sportsDbId: '133681',
     color: '#010E80',
     colorSecondary: '#000000',
-    seedFollow: true,
     followable: true,
   },
   {
@@ -503,37 +492,65 @@ export const TEAMS: Team[] = [
   },
 ]
 
-export const TEAM_BY_ID = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
-  string,
-  Team
->
+/**
+ * Club registry. The static TEAMS above are the curated core (nice crests, short names);
+ * clubs fetched from the feed are registered at runtime so any club in a supported league can be followed.
+ */
+const byId = new Map<string, Team>()
+const bySportsDb = new Map<string, Team>()
+const byName = new Map<string, Team>()
+let version = 0
 
-export const TEAM_BY_SPORTSDB = Object.fromEntries(
-  TEAMS.map((t) => [t.sportsDbId, t]),
-) as Record<string, Team>
+function aliasesFor(t: Team): string[] {
+  const keys = [t.name.toLowerCase(), t.shortName.toLowerCase()]
+  if (t.name === 'Paris Saint-Germain') keys.push('paris sg', 'psg')
+  if (t.name === 'Inter Milan') keys.push('internazionale', 'inter')
+  if (t.name === 'Atlético Madrid') keys.push('atletico madrid', 'atlético de madrid')
+  if (t.name === 'Manchester United') keys.push('man united', 'man utd')
+  if (t.name === 'Manchester City') keys.push('man city')
+  return keys
+}
 
-export const TEAM_BY_NAME = Object.fromEntries(
-  TEAMS.flatMap((t) => {
-    const keys = [t.name.toLowerCase(), t.shortName.toLowerCase()]
-    if (t.name === 'Paris Saint-Germain') keys.push('paris sg', 'psg')
-    if (t.name === 'Inter Milan') keys.push('internazionale', 'inter')
-    if (t.name === 'Atlético Madrid') keys.push('atletico madrid', 'atlético de madrid')
-    if (t.name === 'Manchester United') keys.push('man united', 'man utd')
-    if (t.name === 'Manchester City') keys.push('man city')
-    return keys.map((k) => [k, t] as const)
-  }),
-)
+/** Add or replace clubs. A fetched club that matches a static one by feed id keeps the static entry. */
+export function registerTeams(teams: Team[]): void {
+  for (const t of teams) {
+    const existing = bySportsDb.get(t.sportsDbId)
+    const merged: Team = existing ? { ...t, ...existing, followable: true } : t
+    byId.set(merged.id, merged)
+    bySportsDb.set(merged.sportsDbId, merged)
+    for (const k of aliasesFor(merged)) byName.set(k, merged)
+  }
+  version += 1
+}
 
-export const SEED_FOLLOW_IDS = TEAMS.filter((t) => t.seedFollow).map((t) => t.id)
+registerTeams(TEAMS)
+
+/** Bumps whenever the registry changes — components can use it to re-render after a catalogue loads. */
+export function registryVersion(): number {
+  return version
+}
 
 export function getTeam(id: string): Team | undefined {
-  return TEAM_BY_ID[id]
+  return byId.get(id)
+}
+
+export function teamBySportsDb(sportsDbId: string): Team | undefined {
+  return bySportsDb.get(sportsDbId)
 }
 
 export function resolveTeam(name: string): Team | undefined {
-  return TEAM_BY_NAME[name.trim().toLowerCase()]
+  return byName.get(name.trim().toLowerCase())
+}
+
+export function allTeams(): Team[] {
+  return [...byId.values()]
 }
 
 export function followableTeams(): Team[] {
-  return TEAMS.filter((t) => t.followable)
+  return allTeams().filter((t) => t.followable)
+}
+
+/** Stable id for a club that only exists in the feed. */
+export function dynamicTeamId(sportsDbId: string): string {
+  return `t${sportsDbId}`
 }
