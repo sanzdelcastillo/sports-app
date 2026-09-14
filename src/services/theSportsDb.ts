@@ -7,7 +7,7 @@ import type { Fixture, FixtureStatus, Team, LeagueId } from '../domain/types'
  * All calls go through our proxy so the premium key stays on the server.
  * In the browser the proxy is same-origin; the native shell needs the deployed site's URL (VITE_API_BASE).
  */
-const API_ORIGIN = ((import.meta.env?.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
+export const API_ORIGIN = ((import.meta.env?.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
 export const V1 = `${API_ORIGIN}/api/sportsdb/v1`
 export const V2 = `${API_ORIGIN}/api/sportsdb/v2`
 const BASE = V1
@@ -163,5 +163,15 @@ export async function fetchTeamEvents(sportsDbId: string): Promise<Fixture[]> {
     getJson<{ results: SportsDbEvent[] | null }>(`${BASE}/eventslast?id=${sportsDbId}`),
   ])
   const raw = [...(next.events ?? []), ...(last.results ?? [])]
+  return raw.map(mapEvent).filter((f): f is Fixture => f !== null)
+}
+
+/** Every upcoming and recent game in a competition (v1 league endpoints; premium returns more). */
+export async function fetchLeagueEvents(leagueSportsDbId: string): Promise<Fixture[]> {
+  const [next, last] = await Promise.all([
+    getJson<{ events: SportsDbEvent[] | null }>(`${BASE}/eventsnextleague?id=${leagueSportsDbId}`),
+    getJson<{ events: SportsDbEvent[] | null }>(`${BASE}/eventspastleague?id=${leagueSportsDbId}`),
+  ])
+  const raw = [...(next.events ?? []), ...(last.events ?? [])]
   return raw.map(mapEvent).filter((f): f is Fixture => f !== null)
 }

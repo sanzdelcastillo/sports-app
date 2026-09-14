@@ -32,15 +32,15 @@ export function Welcome() {
 
       {step === 'clubs' ? (
         <>
-          <h1 className="page-title">Which clubs do you follow?</h1>
+          <h1 className="page-title">Who do you follow?</h1>
           <p className="disclaimer">
-            Pick as many as you like. Your week is built from these — every game, in your time zone, with where to
-            watch it in the U.S.
+            Clubs, or whole competitions under the first tab — pick as many as you like. Your week is built from these:
+            every game, in your time zone, with where to watch it in the U.S.
           </p>
           <ClubPicker />
           <div className="welcome-foot">
             <button type="button" className="cta wide" disabled={follows.length === 0} onClick={() => setStep('apps')}>
-              {follows.length === 0 ? 'Pick at least one club' : `Continue with ${follows.length} club${follows.length === 1 ? '' : 's'}`}
+              {follows.length === 0 ? 'Pick at least one' : `Continue with ${follows.length} follow${follows.length === 1 ? '' : 's'}`}
             </button>
           </div>
         </>

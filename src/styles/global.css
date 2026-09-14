@@ -111,7 +111,7 @@ h3 {
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   font-family: var(--display);
   font-weight: 700;
   font-size: 30px;
@@ -2012,4 +2012,100 @@ h3 {
 
 .about p:last-child {
   margin-bottom: 0;
+}
+
+/* ---------- Competitions ---------- */
+
+.followed-chip.comp {
+  background: var(--paper-hi);
+  padding-left: 10px;
+}
+
+.comp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.comp-row.on {
+  border-color: var(--pitch-deep);
+}
+
+.comp-swatch {
+  width: 10px;
+  height: 28px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.comp-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.club-grid[hidden] {
+  display: none;
+}
+
+/* ---------- News ---------- */
+
+.tabs.two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.headlines {
+  display: flex;
+  flex-direction: column;
+}
+
+.headline {
+  display: block;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.headline:last-child {
+  border-bottom: 0;
+}
+
+.headline-title {
+  display: block;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.headline-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-muted);
+}
+
+.wordmark > svg {
+  margin-right: 8px;
+}
+
+.comp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }

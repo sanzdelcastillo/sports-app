@@ -22,8 +22,10 @@ export function scoreLabel(score: number | null, status: FixtureStatus): string 
   return String(score)
 }
 
-export function involvesTeam(fixture: Fixture, teamId: string): boolean {
-  return fixture.homeTeamId === teamId || fixture.awayTeamId === teamId
+/** True when a follow id (a club, or a whole competition as `league:<id>`) covers this fixture. */
+export function involvesTeam(fixture: Fixture, followId: string): boolean {
+  if (followId.startsWith('league:')) return fixture.leagueId === followId.slice(7)
+  return fixture.homeTeamId === followId || fixture.awayTeamId === followId
 }
 
 export function followedSides(fixture: Fixture, follows: Set<string>): string[] {

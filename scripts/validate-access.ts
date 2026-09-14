@@ -12,6 +12,11 @@ import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
 import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/services/matchExtras'
 import { mapClub } from '../src/services/clubs'
 import { mapEvent } from '../src/services/theSportsDb'
+import { involvesTeam } from '../src/lib/status'
+import { leagueIdFromFollow } from '../src/data/leagues'
+import { followKeywords, isForYou } from '../src/services/news'
+// @ts-expect-error plain JS function module
+import { parseRss } from '../api/news.js'
 import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 
@@ -166,6 +171,18 @@ expect(cupTie?.kickoffUtc === '2026-09-15T19:00:00.000Z', 'zone-less feed timest
 expect(cupTie?.leagueId === 'eflcup', 'EFL Cup recognised')
 expect(getTeam(cupTie?.homeTeamId ?? '')?.name === 'Ipswich Town', 'opponent unknown to the app gets a real record from the event')
 expect(getTeam(cupTie?.awayTeamId ?? '')?.id === 'ars', 'known club keeps its core id')
+
+console.log('Competition follows')
+const uclGame = { ...cupTie!, leagueId: 'ucl' as const, homeTeamId: 't1', awayTeamId: 't2' }
+expect(involvesTeam(uclGame, 'league:ucl') && !involvesTeam(uclGame, 'league:uel'), 'a followed competition covers its games')
+expect(!involvesTeam(uclGame, 'ars'), 'club follow still needs the club on the pitch')
+expect(leagueIdFromFollow('league:worldcup') === 'worldcup' && leagueIdFromFollow('ars') === null, 'follow ids parse')
+
+console.log('News parsing')
+const rss = `<rss><channel><item><title><![CDATA[Arsenal &amp; Chelsea draw]]></title><link>https://x.test/a</link><pubDate>Mon, 14 Sep 2026 11:25:35 GMT</pubDate></item><item><title>No link</title></item></channel></rss>`
+const parsed = parseRss(rss, 'Test')
+expect(parsed.length === 1 && parsed[0].title === 'Arsenal & Chelsea draw' && parsed[0].publishedAt?.startsWith('2026-09-14'), 'RSS items parse; items without links dropped')
+expect(isForYou(parsed[0], followKeywords(['ars'])) && !isForYou(parsed[0], followKeywords(['liv'])), 'headline matching by followed club')
 
 console.log('TV listings and language')
 const tv = mapTv([

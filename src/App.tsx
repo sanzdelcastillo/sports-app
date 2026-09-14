@@ -5,6 +5,7 @@ import { Clubs } from './screens/Clubs'
 import { Conflicts } from './screens/Conflicts'
 import { GameDetail } from './screens/GameDetail'
 import { MyWeek } from './screens/MyWeek'
+import { News } from './screens/News'
 import { Settings } from './screens/Settings'
 import { ShareWeek } from './screens/ShareWeek'
 import { Watch } from './screens/Watch'
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/" element={<MyWeek />} />
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/conflicts" element={<Conflicts />} />
+        <Route path="/news" element={<News />} />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/follows" element={<Navigate to="/clubs" replace />} />
         <Route path="/watch" element={<Watch />} />

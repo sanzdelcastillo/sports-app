@@ -16,7 +16,8 @@ No monetization or pricing UI in v1.
 
 - **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs: week stats, a "Your clubs" strip (each club's next game and whether you can reach it), schedule-change strip, catch-up-later queue, hide-scores toggle
 - **Game Detail** — scoreboard with highlight link when finished, then tabs: Watch (destinations + listed U.S. broadcasts), Lineups, Table (standings + form), Calendar (file export)
-- **Clubs** — follow any club in the supported leagues; full league lists come from the feed and are cached on device for a week
+- **Following** — any club in the supported leagues (full lists from the feed, cached a week) and whole competitions: UCL/UEL/UECL, World Cup, Euros, Copa América, Gold Cup, Nations Leagues, Club World Cup, Libertadores, domestic cups, or every game in a league. A competition follow is stored as `league:<id>` in the same follows list
+- **News** — headlines from BBC Sport and Sky Sports football feeds via `api/news.js` (titles + links only, edge-cached 15 min), filtered to what you follow. Licensing: fine for testing; a paid app needs a news license or licensed API before launch
 - **Welcome** — first-run flow: pick clubs, tick apps, build the week
 - **Settings** — hide scores, crests on/off (text badges for image-rights-safe builds), move-my-setup code, About, erase data
 - **My apps** (`/watch`) — tick the services you pay for; free services are listed but never need ticking

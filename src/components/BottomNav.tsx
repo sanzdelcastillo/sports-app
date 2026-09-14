@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { AlertIcon, CalendarIcon, GearIcon, TvIcon, UserIcon } from './icons'
+import { CalendarIcon, GearIcon, NewsIcon, TvIcon, UserIcon } from './icons'
 
 const ITEMS = [
   { to: '/', label: 'My Week', icon: CalendarIcon, end: true },
-  { to: '/conflicts', label: 'Conflicts', icon: AlertIcon },
-  { to: '/clubs', label: 'Clubs', icon: UserIcon },
+  { to: '/news', label: 'News', icon: NewsIcon },
+  { to: '/clubs', label: 'Following', icon: UserIcon },
   { to: '/watch', label: 'Apps', icon: TvIcon },
   { to: '/settings', label: 'Settings', icon: GearIcon },
 ] as const

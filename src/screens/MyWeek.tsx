@@ -164,7 +164,7 @@ export function MyWeek() {
         ) : null}
         {coverage.total > 0 && gapsLine(coverage) ? <p className="hero-gaps">{gapsLine(coverage)}</p> : null}
         <div className="hero-meta mono-label light">
-          {follows.length} followed teams — {sourceLabel}
+          {follows.filter((id) => !id.startsWith('league:')).length} clubs · {follows.filter((id) => id.startsWith('league:')).length} competitions — {sourceLabel}
           {liveFeed === 'on' ? ' — live scores on' : ''} —{' '}
           <button className="text-btn" type="button" onClick={() => void refresh(true)}>
             Refresh
@@ -200,7 +200,7 @@ export function MyWeek() {
 
       {follows.length > 0 && week.fixtures.length > 0 ? (
         <section aria-label="Your clubs">
-          <div className="date-head">Your clubs</div>
+          <div className="date-head">You follow</div>
           <ClubStrip follows={follows} fixtures={week.fixtures} subscribed={subscribed} />
         </section>
       ) : null}

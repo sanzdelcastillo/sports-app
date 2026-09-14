@@ -66,6 +66,30 @@ export const PROVIDERS: Provider[] = [
     blurb: 'Ligue 1. Usually reached through Fubo, Sling, or a cable package.',
   },
   {
+    id: 'fox',
+    name: 'FOX Sports',
+    shortName: 'FOX',
+    url: 'https://www.foxsports.com/live',
+    kind: 'linear',
+    blurb: 'FOX and FS1 — World Cup, Euros, Gold Cup. Reached with a TV login, Fox One, or an antenna for FOX.',
+  },
+  {
+    id: 'univision',
+    name: 'Univision / TUDN / ViX',
+    shortName: 'ViX',
+    url: 'https://vix.com/',
+    kind: 'subscription',
+    blurb: 'Spanish-language coverage of Liga MX, Gold Cup and CONCACAF games. ViX Premium streams most of it.',
+  },
+  {
+    id: 'dazn',
+    name: 'DAZN',
+    shortName: 'DAZN',
+    url: 'https://www.dazn.com/',
+    kind: 'subscription',
+    blurb: 'Club World Cup rights holder. Some games free with a DAZN account.',
+  },
+  {
     id: 'fandango',
     name: 'Fandango at Home',
     shortName: 'Fandango',
@@ -132,6 +156,19 @@ const LEAGUE_PROVIDERS: Partial<Record<LeagueId, DestinationId[]>> = {
   dfbpokal: ['espn-plus'],
   leaguescup: ['apple-tv-mls'],
   usopencup: ['paramount-plus'],
+  // Tournaments — reviewed for the 2026-27 window; unlisted ones are shown as unconfirmed rather than guessed.
+  worldcup: ['fox', 'peacock'],
+  euros: ['fox'],
+  copaamerica: [],
+  goldcup: ['fox', 'univision'],
+  uefanations: [],
+  concacafnations: ['paramount-plus', 'univision'],
+  clubworldcup: ['dazn'],
+  libertadores: ['bein'],
+  concacafcc: ['fox'],
+  wcqconcacaf: ['paramount-plus'],
+  wcqconmebol: [],
+  wcquefa: [],
 }
 
 /** Destination badge — not the match ● LIVE pill. Live only when the match is in progress. */

@@ -25,6 +25,18 @@ export type LeagueId =
   | 'dfbpokal'
   | 'leaguescup'
   | 'usopencup'
+  | 'worldcup'
+  | 'euros'
+  | 'copaamerica'
+  | 'goldcup'
+  | 'uefanations'
+  | 'concacafnations'
+  | 'clubworldcup'
+  | 'libertadores'
+  | 'concacafcc'
+  | 'wcqconcacaf'
+  | 'wcqconmebol'
+  | 'wcquefa'
   | 'other'
 
 export type DestinationId =
@@ -37,6 +49,9 @@ export type DestinationId =
   | 'usa-network'
   | 'fandango'
   | 'bein'
+  | 'fox'
+  | 'univision'
+  | 'dazn'
   | 'unknown'
 
 /** How a destination is reached: a paid subscription, a free service, or a linear TV channel. */

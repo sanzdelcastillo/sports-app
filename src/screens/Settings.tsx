@@ -115,6 +115,9 @@ export function Settings() {
         <Link className="cta secondary wide" to="/watch">
           Edit apps ({subscribed.length})
         </Link>
+        <Link className="cta secondary wide" to="/conflicts">
+          Overlapping games this week
+        </Link>
       </div>
 
       <div className="date-head">Move my setup to another phone</div>
