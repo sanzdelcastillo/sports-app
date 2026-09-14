@@ -14,13 +14,39 @@ No monetization or pricing UI in v1.
 
 ## Screens
 
-- **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs
+- **My Week** — favorites-complete ~7 day window (US Eastern) for followed clubs, with a coverage line ("6 of 9 upcoming in your apps or free · 3 need Paramount+") and a hide-scores toggle
 - **Game Detail** — crests, kickoff, venue, where-to-watch destinations only
 - **Follows** — Julio’s 11 seed clubs plus more soccer; real public crests
-- **Watch destinations** — mark owned/subscribed services (not checkout)
+- **My apps** (`/watch`) — tick the services you pay for; free services are listed but never need ticking
+- **Share my week** (`/share`) — plain-text week (day, kickoff ET, matchup, where to watch) with Copy and native Share; never includes scores
 - **News** — follow-only notes (outbound links)
 - **Remind** — local device reminders (no push in v1)
-- **Conflicts** — overlapping kickoffs among followed clubs
+- **Conflicts** — overlapping kickoffs among followed clubs, with a suggested "watch live" / "catch up later" split
+
+## Access labels
+
+Every game carries one chip derived from the user's own service list (`src/data/watch.ts` → `accessFor`):
+
+| Chip | Meaning |
+| --- | --- |
+| **In your apps · Peacock** | Primary destination is a service the user ticked. Self-reported — never a verified entitlement. |
+| **Free on Fandango** | Primary destination needs no subscription. |
+| **Needs Paramount+** | We know the destination and the user has not ticked it. CTA becomes "Check Paramount+". |
+| **Where to watch unknown** | No confident U.S. destination for that competition. |
+
+Copy never says "you can watch" — only what the user told us and what the map says.
+
+## Rights map freshness
+
+`RIGHTS_REVIEWED_ON` and `RIGHTS_SEASON` in `src/data/watch.ts` are shown on My apps, Game Detail, and in the share text. Update the date whenever the map is checked against current U.S. rights. As of the 2026-27 review: MLS is included with Apple TV (Season Pass discontinued), Bundesliga streams free on Fandango with select games on USA Network, Premier League is Peacock (+ NBC/USA), La Liga is ESPN+, UEFA/Serie A/Liga Portugal are Paramount+ (+ CBS), Ligue 1 is beIN.
+
+## Checks
+
+```bash
+npm run build         # type-check + bundle
+npm run lint          # oxlint
+npm run check:access  # access labels, coverage roll-up, share text, rights-map hygiene
+```
 
 ## Seed clubs (Julio’s 11)
 

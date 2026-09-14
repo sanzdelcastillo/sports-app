@@ -21,8 +21,23 @@ export type DestinationId =
   | 'paramount-plus'
   | 'cbs-sports'
   | 'nbc'
+  | 'usa-network'
+  | 'fandango'
   | 'bein'
   | 'unknown'
+
+/** How a destination is reached: a paid subscription, a free service, or a linear TV channel. */
+export type DestinationKind = 'subscription' | 'free' | 'linear'
+
+/**
+ * What the user's own service list says about a fixture's primary destination.
+ * Self-reported only — never a verified entitlement.
+ *  - owned: the destination is on a service the user marked as theirs
+ *  - free: the destination needs no subscription
+ *  - missing: we know the destination and the user has not marked it
+ *  - unknown: we have no confident U.S. destination
+ */
+export type AccessState = 'owned' | 'free' | 'missing' | 'unknown'
 
 export interface Team {
   id: string
@@ -54,6 +69,7 @@ export interface WatchDestination {
   name: string
   shortName: string
   url: string
+  kind: DestinationKind
   availability: WatchAvailability
   note: string
 }

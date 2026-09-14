@@ -1,12 +1,25 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, featuredKicker, GameCardSkeleton, GameRow } from '../components/GameCard'
+import { coverageFor } from '../data/watch'
 import { formatKickoff } from '../lib/time'
 import { useAppState } from '../stores/AppState'
 
+function coverageLine(c: ReturnType<typeof coverageFor>): string {
+  if (c.total === 0) return ''
+  const reachable = c.owned + c.free
+  const parts = [`${reachable} of ${c.total} upcoming in your apps or free`]
+  if (c.gaps.length) {
+    parts.push(c.gaps.map((g) => `${g.games} need${g.games === 1 ? 's' : ''} ${g.shortName}`).join(', '))
+  }
+  if (c.unknown) parts.push(`${c.unknown} unknown`)
+  return parts.join(' · ')
+}
+
 export function MyWeek() {
-  const { follows, week, loading, refresh, subscribed } = useAppState()
+  const { follows, week, loading, refresh, subscribed, hideScores, toggleHideScores } = useAppState()
 
   const { featured, upcomingGroups, recentGroups } = useMemo(() => {
     const upcoming = week.fixtures.filter((f) => f.status !== 'final')
@@ -33,6 +46,11 @@ export function MyWeek() {
     }
   }, [week.fixtures])
 
+  const coverage = useMemo(
+    () => coverageFor(week.fixtures.filter((f) => f.status !== 'final'), subscribed),
+    [week.fixtures, subscribed],
+  )
+
   const sourceLabel =
     week.source === 'live'
       ? 'TheSportsDB (near-live)'
@@ -49,14 +67,33 @@ export function MyWeek() {
             <div className="kicker">Stadium night</div>
             <h1>My Week</h1>
           </div>
-          <span className="pill">Live · ~7 days ET</span>
+          <button
+            type="button"
+            className="pill pill-btn"
+            aria-pressed={hideScores}
+            onClick={toggleHideScores}
+            title="Hide scores for live and finished games"
+          >
+            {hideScores ? 'Scores hidden' : 'Scores shown'}
+          </button>
         </div>
+        {coverage.total > 0 ? <div className="hero-coverage">{coverageLine(coverage)}</div> : null}
         <div className="hero-meta">
           {follows.length} followed teams · {sourceLabel} ·{' '}
           <button className="text-btn" type="button" onClick={() => void refresh()}>
             Refresh
           </button>
         </div>
+        {week.fixtures.length > 0 ? (
+          <div className="hero-actions">
+            <Link className="pill" to="/share">
+              Share my week
+            </Link>
+            <Link className="pill" to="/watch">
+              My apps
+            </Link>
+          </div>
+        ) : null}
       </section>
 
       {follows.length === 0 ? (

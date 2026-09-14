@@ -1,5 +1,5 @@
-import { primaryDestination } from '../data/watch'
-import type { DestinationId, Fixture, WatchAvailability } from '../domain/types'
+import { accessFor } from '../data/watch'
+import type { AccessState, DestinationId, Fixture, WatchAvailability } from '../domain/types'
 import { CheckIcon } from './icons'
 
 export function WatchCta({
@@ -13,9 +13,16 @@ export function WatchCta({
   wide?: boolean
   compact?: boolean
 }) {
-  const dest = primaryDestination(fixture, subscribed)
+  const access = accessFor(fixture, subscribed)
+  const dest = access.destination
   const label =
-    dest.id === 'unknown' ? 'Find where to watch ↗' : `Open in ${dest.shortName} ↗`
+    access.state === 'unknown'
+      ? 'Find where to watch ↗'
+      : access.state === 'free'
+        ? `Watch free on ${dest.shortName} ↗`
+        : access.state === 'missing'
+          ? `Check ${dest.shortName} ↗`
+          : `Open in ${dest.shortName} ↗`
 
   const size = wide ? ' wide' : compact ? ' compact' : ''
 
@@ -67,6 +74,32 @@ export function MatchStatusBadge({ status }: { status: Fixture['status'] }) {
   if (status === 'final') return <span className="badge">Final</span>
   if (status === 'scheduled') return <span className="badge ghost">Upcoming</span>
   return <span className="badge ghost">Unknown</span>
+}
+
+/**
+ * One chip that answers "can I reach this?" from the user's own service list.
+ * Green = a service they ticked. Cyan = free. Outlined = they'd need it. Muted = unknown.
+ */
+export function AccessChip({
+  fixture,
+  subscribed,
+}: {
+  fixture: Fixture
+  subscribed: DestinationId[]
+}) {
+  const access = accessFor(fixture, subscribed)
+  const tone: Record<AccessState, string> = {
+    owned: 'access-owned',
+    free: 'access-free',
+    missing: 'access-missing',
+    unknown: 'ghost',
+  }
+  return (
+    <span className={`badge ${tone[access.state]}`} title={access.destination.note}>
+      {access.state === 'owned' ? <CheckIcon width={12} height={12} aria-hidden="true" /> : null}
+      {access.label}
+    </span>
+  )
 }
 
 export function OwnedChip({ owned }: { owned: boolean }) {

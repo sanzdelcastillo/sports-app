@@ -4,8 +4,9 @@ import { getTeam } from '../data/teams'
 import type { DestinationId, Fixture } from '../domain/types'
 import { scoreLabel } from '../lib/status'
 import { formatKickoff } from '../lib/time'
+import { useAppState } from '../stores/AppState'
 import { TeamCrest } from './TeamCrest'
-import { MatchStatusBadge, WatchCta } from './WatchCta'
+import { AccessChip, MatchStatusBadge, WatchCta } from './WatchCta'
 
 function clockLabel(fixture: Fixture, time: string): string {
   if (fixture.status === 'final') {
@@ -35,18 +36,24 @@ export function Scoreboard({
   size?: 'sm' | 'lg'
   names?: 'short' | 'full'
 }) {
+  const { hideScores } = useAppState()
   const home = getTeam(fixture.homeTeamId)
   const away = getTeam(fixture.awayTeamId)
   const kick = formatKickoff(fixture.kickoffUtc)
   const crestSize = size === 'lg' ? 'lg' : 'sm'
   const showRecords = names === 'full' || Boolean(fixture.awayRecord || fixture.homeRecord)
+  const masked = hideScores && fixture.status !== 'scheduled'
 
   return (
     <div className={`scoreboard ${size}`}>
       <div className="scoreboard-clock-row">
-        <span className="score">{scoreLabel(fixture.awayScore, fixture.status)}</span>
-        <span className="clock">{clockLabel(fixture, kick.time)}</span>
-        <span className="score">{scoreLabel(fixture.homeScore, fixture.status)}</span>
+        <span className={`score${masked ? ' masked' : ''}`} aria-label={masked ? 'Score hidden' : undefined}>
+          {masked ? '·' : scoreLabel(fixture.awayScore, fixture.status)}
+        </span>
+        <span className="clock">{masked && fixture.status === 'final' ? 'Played' : clockLabel(fixture, kick.time)}</span>
+        <span className={`score${masked ? ' masked' : ''}`} aria-label={masked ? 'Score hidden' : undefined}>
+          {masked ? '·' : scoreLabel(fixture.homeScore, fixture.status)}
+        </span>
       </div>
       <div className="scoreboard-teams">
         <div className="side">
@@ -90,6 +97,7 @@ function CardActions({
   return (
     <div className="row-actions">
       <div className="badges">
+        <AccessChip fixture={fixture} subscribed={subscribed} />
         {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
       </div>
       <WatchCta fixture={fixture} subscribed={subscribed} compact={compact} />

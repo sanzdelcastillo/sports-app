@@ -4,16 +4,20 @@ import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { Scoreboard } from '../components/GameCard'
 import { ClockIcon } from '../components/icons'
-import { AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
+import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
-import { destinationsForFixture, primaryDestination } from '../data/watch'
+import { destinationsForFixture, primaryDestination, RIGHTS_REVIEWED_ON } from '../data/watch'
 import { formatVenueDate } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { newsForFixture } from '../services/news'
 import { useAppState } from '../stores/AppState'
 
 type Tab = 'watch' | 'remind' | 'news'
+
+const reviewedShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+  new Date(`${RIGHTS_REVIEWED_ON}T12:00:00Z`),
+)
 
 export function GameDetail() {
   const { id = '' } = useParams()
@@ -77,10 +81,8 @@ export function GameDetail() {
         </div>
         <div className="badges" style={{ marginTop: 12 }}>
           <AvailabilityBadge availability={primary.availability} />
-          <span className="badge ghost">
-            on {primary.shortName}
-            {fixture.mustWatch ? ' · Must-watch' : ''}
-          </span>
+          <AccessChip fixture={fixture} subscribed={subscribed} />
+          {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
         </div>
       </article>
 
@@ -105,10 +107,14 @@ export function GameDetail() {
               <div key={dest.id} className="card watch-panel">
                 <div className="badges">
                   <AvailabilityBadge availability={dest.availability} />
-                  <OwnedChip owned={isOwnedDestination(dest.id, subscribed)} />
+                  {dest.kind === 'free' ? (
+                    <span className="badge access-free">Free</span>
+                  ) : (
+                    <OwnedChip owned={isOwnedDestination(dest.id, subscribed)} />
+                  )}
                 </div>
                 <h3>{dest.name}</h3>
-                <p className="watch-app">App: {dest.shortName}</p>
+                <p className="watch-app">{dest.note}</p>
                 <a className="deep-link" href={dest.url} target="_blank" rel="noreferrer">
                   Open provider site ↗
                 </a>
@@ -116,11 +122,11 @@ export function GameDetail() {
             ))}
           </div>
           <p className="source-note">
-            Prefer a service you already use? Mark it on{' '}
+            Where-to-watch reviewed {reviewedShort}. Tick the services you have on{' '}
             <Link to="/watch" style={{ textDecoration: 'underline' }}>
-              Watch destinations
-            </Link>
-            .
+              My apps
+            </Link>{' '}
+            so we can label games for you.
           </p>
         </section>
       ) : null}

@@ -15,6 +15,7 @@ import { loadFollowedWeek, seedWeek, type WeekResult } from '../services/fixture
 const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
 const REMIND_KEY = 'sfp.reminders.v1'
+const SPOILER_KEY = 'sfp.hideScores.v1'
 
 interface AppState {
   follows: string[]
@@ -25,6 +26,9 @@ interface AppState {
   reminders: Reminder[]
   hasReminder: (fixtureId: string) => boolean
   toggleReminder: (fixtureId: string) => void
+  /** Spoiler protection: hide scores for live and finished games until revealed. */
+  hideScores: boolean
+  toggleHideScores: () => void
   week: WeekResult
   loading: boolean
   refresh: () => Promise<void>
@@ -43,6 +47,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>(() =>
     readJson<Reminder[]>(REMIND_KEY, []),
   )
+  const [hideScores, setHideScores] = useState<boolean>(() =>
+    readJson<boolean>(SPOILER_KEY, false),
+  )
   const [week, setWeek] = useState<WeekResult>(() => ({
     fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS)),
     source: 'seed',
@@ -53,6 +60,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(FOLLOWS_KEY, follows), [follows])
   useEffect(() => writeJson(SUBS_KEY, subscribed), [subscribed])
   useEffect(() => writeJson(REMIND_KEY, reminders), [reminders])
+  useEffect(() => writeJson(SPOILER_KEY, hideScores), [hideScores])
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -85,6 +93,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
+
   const hasReminder = useCallback(
     (fixtureId: string) => reminders.some((r) => r.fixtureId === fixtureId),
     [reminders],
@@ -102,6 +112,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       reminders,
       hasReminder,
       toggleReminder,
+      hideScores,
+      toggleHideScores,
       week,
       loading,
       refresh,
@@ -116,6 +128,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       reminders,
       hasReminder,
       toggleReminder,
+      hideScores,
+      toggleHideScores,
       week,
       loading,
       refresh,
