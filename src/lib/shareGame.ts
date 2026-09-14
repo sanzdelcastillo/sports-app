@@ -26,7 +26,7 @@ export function gameShareText(fixture: Fixture, subscribed: DestinationId[], pre
   const kick = formatKickoff(fixture.kickoffUtc)
   const league = getLeague(fixture.leagueId)
   const lines = [
-    `${home?.name ?? 'Home'} vs ${away?.name ?? 'Away'} · ${league.shortName}`,
+    `${home?.name ?? 'Home'} vs ${away?.name ?? 'Away'} · ${league.name}`,
     `${kick.day} · ${kick.time} (${zoneAbbr()})`,
     whereLine(fixture, subscribed),
   ]
