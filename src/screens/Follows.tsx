@@ -13,15 +13,12 @@ export function Follows() {
   return (
     <div>
       <AppHeader />
-      <div className="kicker" style={{ color: 'var(--muted)', marginBottom: 6 }}>
-        Your clubs
-      </div>
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>Follows</h1>
+      <h1 className="page-title">Follows</h1>
       <p className="disclaimer">
         {follows.length} followed · Julio’s 11 are pre-selected. Logos are public crests (TheSportsDB / ESPN CDN).
       </p>
-      <Link className="cta" to="/watch" style={{ marginBottom: 14 }}>
-        Watch destinations
+      <Link className="cta secondary" to="/watch" style={{ marginBottom: 14 }}>
+        My apps
       </Link>
 
       <div className="date-head">Julio’s 11</div>

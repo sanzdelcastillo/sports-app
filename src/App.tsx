@@ -10,22 +10,11 @@ import { Remind } from './screens/Remind'
 import { ShareWeek } from './screens/ShareWeek'
 import { Watch } from './screens/Watch'
 
-function themeFor(pathname: string): string {
-  if (pathname.startsWith('/game')) return 'detail'
-  if (pathname.startsWith('/news')) return 'news'
-  if (pathname.startsWith('/remind')) return 'remind'
-  if (pathname.startsWith('/conflicts')) return 'conflicts'
-  if (pathname.startsWith('/follows')) return 'follows'
-  if (pathname.startsWith('/watch')) return 'watch'
-  if (pathname.startsWith('/share')) return 'week'
-  return 'week'
-}
-
 export default function App() {
   const location = useLocation()
 
   useEffect(() => {
-    document.body.dataset.theme = themeFor(location.pathname)
+    window.scrollTo(0, 0)
   }, [location.pathname])
 
   return (

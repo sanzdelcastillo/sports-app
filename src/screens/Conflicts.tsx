@@ -6,14 +6,9 @@ import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { accessFor } from '../data/watch'
 import type { DestinationId, Fixture } from '../domain/types'
-import { MATCH_LENGTH_MS, formatKickoff, overlapMs, parseUtc } from '../lib/time'
+import { findConflicts, type Conflict } from '../lib/conflicts'
+import { formatKickoff } from '../lib/time'
 import { useAppState } from '../stores/AppState'
-
-interface Conflict {
-  a: Fixture
-  b: Fixture
-  overlapMin: number
-}
 
 interface Plan {
   live: Fixture
@@ -43,24 +38,6 @@ function planFor(c: Conflict, subscribed: DestinationId[]): Plan {
   return { live: a, later: b, reason: 'Earlier kickoff goes live' }
 }
 
-function findConflicts(fixtures: Fixture[]): Conflict[] {
-  const upcoming = fixtures.filter((f) => f.status !== 'final')
-  const found: Conflict[] = []
-  for (let i = 0; i < upcoming.length; i += 1) {
-    for (let j = i + 1; j < upcoming.length; j += 1) {
-      const a = upcoming[i]
-      const b = upcoming[j]
-      const a0 = parseUtc(a.kickoffUtc).getTime()
-      const b0 = parseUtc(b.kickoffUtc).getTime()
-      const overlap = overlapMs(a0, a0 + MATCH_LENGTH_MS, b0, b0 + MATCH_LENGTH_MS)
-      if (overlap >= 30 * 60 * 1000) {
-        found.push({ a, b, overlapMin: Math.round(overlap / 60000) })
-      }
-    }
-  }
-  return found
-}
-
 export function Conflicts() {
   const { week, subscribed } = useAppState()
   const conflicts = findConflicts(week.fixtures)
@@ -68,7 +45,7 @@ export function Conflicts() {
   return (
     <div>
       <AppHeader />
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>Conflicts</h1>
+      <h1 className="page-title">Conflicts</h1>
       <p className="disclaimer">
         Overlapping kickoffs among followed clubs (30+ minutes). We suggest one to watch live and one to catch up on.
       </p>

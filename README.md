@@ -1,4 +1,4 @@
-# Sports Fan Planner
+# Watch Plan (Sports Fan Planner)
 
 Mobile-first planner for soccer fans. Production v1 answers three questions only:
 
@@ -83,6 +83,23 @@ Live fetch is per followed team (`eventsnext` + `eventslast`) and merged with se
 Optional later: a free [football-data.org](https://www.football-data.org/) key can be added behind a small proxy. Not required for v1.
 
 Where-to-watch mappings are **US-market guidance** and can go stale when rights move. The UI says so.
+
+## Design system — Matchday Editorial
+
+Shared with the Watch Plan prototype so both codebases read as one product. Tokens live at the top of `src/styles/global.css`.
+
+| Role | Value |
+| --- | --- |
+| Paper / paper highlight | `#F3EFE4` / `#FBF8F0` — planning surfaces |
+| Deep pitch / pitch / pitch soft | `#0E3C29` / `#17643F` / `#DFE9DF` — scoreboard panels, active states |
+| Amber | `#E5A62E` — priority, must-watch, moved |
+| Ink / muted ink / line | `#121813` / `#697169` / `#D3CEC0` |
+| Display type | Barlow Condensed 600–700 — headlines, times, scores, team names |
+| Body type | IBM Plex Sans 400–700 |
+| Utility type | IBM Plex Mono 500 — chips, timestamps, freshness |
+| Radius | 8px controls, 14px cards, 22px major panels |
+
+Rules: no gradients, no glass, no drop shadows. Games are programme-style listing rows (kickoff column, teams stacked, actions beneath). The only dark surfaces are the hero band and the scoreboard panels. Uncertainty is written in words, not colour alone. Motion is limited to the live pulse dot. Wordmark: WATCH in deep pitch, PLAN in amber.
 
 ## Stack
 

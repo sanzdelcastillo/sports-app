@@ -19,7 +19,7 @@ export function Watch() {
       <Link className="back" to="/">
         ← My Week
       </Link>
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>My apps</h1>
+      <h1 className="page-title">My apps</h1>
       <p className="disclaimer">
         Tick the services you already pay for. Every game then shows whether it is in your apps, free, or needs
         something you don’t have. We only use this to label games — we can’t check your account.

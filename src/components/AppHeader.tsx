@@ -1,13 +1,13 @@
-import { GlobeIcon } from './icons'
+import { Link } from 'react-router-dom'
 
-export function AppHeader({ accent = 'cyan' }: { accent?: 'cyan' | 'orange' }) {
+export function AppHeader() {
   return (
-    <header className="app-header">
-      <GlobeIcon className="brand-mark" accent={accent} />
-      <div>
-        <div className="brand-title">Sports Fan Planner</div>
-        <div className="brand-sub">Where to watch · US Eastern · No streaming.</div>
-      </div>
+    <header className="masthead">
+      <Link to="/" className="wordmark" aria-label="Watch Plan home">
+        <span className="wm-watch">Watch</span>
+        <span className="wm-plan">Plan</span>
+      </Link>
+      <span className="masthead-sub mono-label">Never streams video</span>
     </header>
   )
 }

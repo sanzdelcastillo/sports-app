@@ -15,7 +15,7 @@ export function Remind() {
   return (
     <div>
       <AppHeader />
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>Remind</h1>
+      <h1 className="page-title">Remind</h1>
       <p className="disclaimer">Local reminders only. This device will not send push alerts in v1, and nothing is streamed.</p>
       {fixtures.length === 0 ? (
         <EmptyState
@@ -30,10 +30,10 @@ export function Remind() {
             <div key={fixture.id}>
               <GameRow fixture={fixture} subscribed={subscribed} />
               <div className="row-gap" style={{ marginTop: 8 }}>
-                <Link className="cta" to={`/game/${fixture.id}`}>
+                <Link className="cta compact" to={`/game/${fixture.id}`}>
                   Open game
                 </Link>
-                <button type="button" className="cta" onClick={() => toggleReminder(fixture.id)}>
+                <button type="button" className="cta compact secondary" onClick={() => toggleReminder(fixture.id)}>
                   Remove
                 </button>
               </div>

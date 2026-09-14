@@ -43,7 +43,7 @@ export function ShareWeek() {
       <Link className="back" to="/">
         ← My Week
       </Link>
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>Share my week</h1>
+      <h1 className="page-title">Share my week</h1>
       <p className="disclaimer">
         Plain text, ready to paste into a text or email. Kickoffs in U.S. Eastern with where to watch.
       </p>
@@ -78,7 +78,7 @@ export function ShareWeek() {
         {text}
       </pre>
 
-      <h2 style={{ margin: '20px 0 6px', fontSize: 18 }}>Or add the whole week to a calendar</h2>
+      <h2 className="display-head" style={{ marginTop: 20 }}>Or add the whole week to a calendar</h2>
       <p className="disclaimer">
         One file with every upcoming game. Open it on your phone or computer and your calendar imports them all. Each
         game keeps a stable ID, so importing again after a schedule change updates events rather than duplicating them.

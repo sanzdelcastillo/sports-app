@@ -39,7 +39,7 @@ export function GameDetail() {
   if (!fixture || !home || !away || !league || !primary) {
     return (
       <div>
-        <AppHeader accent="orange" />
+        <AppHeader />
         <Link className="back" to="/">
           ← My Week
         </Link>
@@ -55,14 +55,14 @@ export function GameDetail() {
 
   return (
     <div>
-      <AppHeader accent="orange" />
+      <AppHeader />
       <Link className="back" to="/">
         ← My Week
       </Link>
 
       <article className="card card-featured">
-        <div className="match-head" style={{ justifyContent: 'center' }}>
-          {league.shortName}
+        <div className="match-head">
+          {league.name}
         </div>
         <Scoreboard fixture={fixture} size="lg" names="full" />
         <p className="venue">
@@ -91,10 +91,10 @@ export function GameDetail() {
 
       <div className="tabs" role="tablist" aria-label="Game details">
         <button type="button" className="tab" role="tab" aria-selected={tab === 'watch'} onClick={() => setTab('watch')}>
-          Where to watch
+          Watch
         </button>
         <button type="button" className="tab" role="tab" aria-selected={tab === 'remind'} onClick={() => setTab('remind')}>
-          Reminder
+          Remind
         </button>
         <button type="button" className="tab" role="tab" aria-selected={tab === 'news'} onClick={() => setTab('news')}>
           News
@@ -136,14 +136,14 @@ export function GameDetail() {
 
       {tab === 'remind' ? (
         <section className="card">
-          <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Device reminder</h2>
+          <h2 className="display-head">Device reminder</h2>
           <p className="disclaimer">
             v1 stores a local reminder only. This app does not send push notifications and never starts a stream.
           </p>
           <button type="button" className="cta glass-pill wide" onClick={() => toggleReminder(fixture.id)}>
             {hasReminder(fixture.id) ? 'Remove reminder' : 'Remind me'}
           </button>
-          <h2 style={{ margin: '18px 0 8px', fontSize: 18 }}>Add to your calendar</h2>
+          <h2 className="display-head" style={{ marginTop: 18 }}>Add to your calendar</h2>
           <p className="disclaimer">
             Downloads a calendar file with the kickoff in your time zone and where to watch in the notes. If the
             kickoff moves, download again — your calendar updates the same event instead of adding a second one.

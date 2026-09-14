@@ -12,7 +12,7 @@ export function News() {
   return (
     <div>
       <AppHeader />
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.03em' }}>News</h1>
+      <h1 className="page-title">News</h1>
       <p className="disclaimer">Follow-only notes. Links go out to the web — no in-app video.</p>
       {follows.length === 0 ? (
         <EmptyState

@@ -2,23 +2,27 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
-import { FeaturedGame, featuredKicker, GameCardSkeleton, GameRow } from '../components/GameCard'
+import { FeaturedGame, GameCardSkeleton, GameRow } from '../components/GameCard'
 import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
 import type { FixtureChange } from '../domain/types'
+import { findConflicts } from '../lib/conflicts'
 import { formatKickoff } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
-function coverageLine(c: ReturnType<typeof coverageFor>): string {
-  if (c.total === 0) return ''
-  const reachable = c.owned + c.free
-  const parts = [`${reachable} of ${c.total} upcoming in your apps or free`]
+function gapsLine(c: ReturnType<typeof coverageFor>): string | null {
+  const parts: string[] = []
   if (c.gaps.length) {
     parts.push(c.gaps.map((g) => `${g.games} need${g.games === 1 ? 's' : ''} ${g.shortName}`).join(', '))
   }
-  if (c.unknown) parts.push(`${c.unknown} unknown`)
-  return parts.join(' · ')
+  if (c.unknown) parts.push(`${c.unknown} with no confirmed listing`)
+  return parts.length ? parts.join('. ') + '.' : null
+}
+
+function localZone(): string {
+  const time = formatKickoff(new Date().toISOString()).time
+  return time.slice(time.lastIndexOf(' ') + 1)
 }
 
 function changeSentence(change: FixtureChange, fixtures: ReturnType<typeof useAppState>['week']['fixtures']): string | null {
@@ -89,6 +93,8 @@ export function MyWeek() {
     [changes, week.fixtures],
   )
 
+  const overlaps = useMemo(() => findConflicts(week.fixtures).length, [week.fixtures])
+
   const laterFixtures = useMemo(
     () =>
       watchLater
@@ -110,13 +116,10 @@ export function MyWeek() {
       <AppHeader />
       <section className="hero" aria-label="My Week">
         <div className="hero-top">
-          <div>
-            <div className="kicker">Stadium night</div>
-            <h1>My Week</h1>
-          </div>
+          <span className="mono-label light">Your local time — {localZone()}</span>
           <button
             type="button"
-            className="pill pill-btn"
+            className="pill-btn"
             aria-pressed={hideScores}
             onClick={toggleHideScores}
             title="Hide scores for live and finished games"
@@ -124,19 +127,44 @@ export function MyWeek() {
             {hideScores ? 'Scores hidden' : 'Scores shown'}
           </button>
         </div>
-        {coverage.total > 0 ? <div className="hero-coverage">{coverageLine(coverage)}</div> : null}
-        <div className="hero-meta">
-          {follows.length} followed teams · {sourceLabel} ·{' '}
+        <h1 className="hero-title">
+          Your week
+          <br />
+          in football
+        </h1>
+        {coverage.total > 0 ? (
+          <dl className="hero-stats">
+            <div>
+              <dt>Matches</dt>
+              <dd>{coverage.total}</dd>
+            </div>
+            <div>
+              <dt>In your apps</dt>
+              <dd>{coverage.owned + coverage.free}</dd>
+            </div>
+            <div>
+              <dt>Overlaps</dt>
+              <dd>{overlaps}</dd>
+            </div>
+            <div>
+              <dt>Changes</dt>
+              <dd>{changeLines.length}</dd>
+            </div>
+          </dl>
+        ) : null}
+        {coverage.total > 0 && gapsLine(coverage) ? <p className="hero-gaps">{gapsLine(coverage)}</p> : null}
+        <div className="hero-meta mono-label light">
+          {follows.length} followed teams — {sourceLabel} —{' '}
           <button className="text-btn" type="button" onClick={() => void refresh()}>
             Refresh
           </button>
         </div>
         {week.fixtures.length > 0 ? (
           <div className="hero-actions">
-            <Link className="pill" to="/share">
+            <Link className="hero-link" to="/share">
               Share my week
             </Link>
-            <Link className="pill" to="/watch">
+            <Link className="hero-link" to="/watch">
               My apps
             </Link>
           </div>
@@ -161,7 +189,7 @@ export function MyWeek() {
 
       {laterFixtures.length > 0 ? (
         <section aria-label="Catch up later">
-          <div className="section-label">Catch up later · scores hidden</div>
+          <div className="date-head">Catch up later — scores hidden</div>
           {laterFixtures.map((fixture) => (
             <div key={`later-${fixture.id}`} className="later-item">
               <GameRow fixture={fixture} subscribed={subscribed} />
@@ -199,10 +227,7 @@ export function MyWeek() {
           ) : (
             <>
               {featured ? (
-                <>
-                  <div className="section-label">{featuredKicker(featured)}</div>
-                  <FeaturedGame fixture={featured} subscribed={subscribed} />
-                </>
+                <FeaturedGame fixture={featured} subscribed={subscribed} />
               ) : null}
               {upcomingGroups.map(([day, fixtures]) => (
                 <section key={`up-${day}`}>
@@ -214,7 +239,7 @@ export function MyWeek() {
               ))}
               {recentGroups.length > 0 ? (
                 <>
-                  <div className="section-label" style={{ marginTop: 22 }}>
+                  <div className="date-head strong" style={{ marginTop: 22 }}>
                     Earlier this week
                   </div>
                   {recentGroups.map(([day, fixtures]) => (
@@ -232,7 +257,7 @@ export function MyWeek() {
         </>
       )}
 
-      <p className="lock-note">This app never streams or embeds live video. Destinations open the provider.</p>
+      <p className="lock-note">Never streams or embeds video. Buttons open the provider.</p>
     </div>
   )
 }
