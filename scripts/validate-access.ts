@@ -21,6 +21,7 @@ import { followKeywords, isForYou } from '../src/services/news'
 import { parseRss } from '../api/news.js'
 import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
+import { gameShareText } from '../src/lib/shareGame'
 
 let failures = 0
 function expect(condition: boolean, message: string) {
@@ -223,6 +224,11 @@ expect(rows.length === 1 && rows[0].form === 'DWWW' && rows[0].teamProviderId ==
 expect(seasonFor('epl', '2026-09-14T00:00:00Z') === '2026' && seasonFor('l9999', '2026-03-01T00:00:00Z') === '2025', 'season from the provider or a July cut-over guess')
 teamFromProvider({ id: 5000, name: 'Real Salt Lake', code: null }, 'mls')
 expect(getTeam('t5000')?.shortName === 'RSL', 'short code from initials when the provider has none')
+
+console.log('Share this game')
+const shareTxt = gameShareText(epl, ['peacock'], { home: 2, away: 1 })
+expect(shareTxt.includes('Premier League') && shareTxt.includes('On Peacock') && shareTxt.includes('My call:') && shareTxt.includes('/game/epl-1'), 'share text has league, destination, call and link')
+expect(!gameShareText(epl, []).includes('My call'), 'no call line without a prediction')
 
 console.log('Setup code')
 const setup = { follows: ['ars', 't133600'], subscribed: ['peacock' as const], watchLater: ['x1'], hideScores: true }

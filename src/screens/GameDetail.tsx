@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
@@ -14,16 +14,19 @@ import { buildIcs, downloadIcs } from '../lib/ics'
 import { formatVenueDate } from '../lib/time'
 import { openExternal } from '../native/external'
 import { fixtureById } from '../services/fixtures'
+import { fetchFixtureById } from '../services/apiFootball'
+import { SharePanel } from '../components/SharePanel'
 import { useAppState } from '../stores/AppState'
 
-type Tab = 'match' | 'watch' | 'lineups' | 'table' | 'calendar'
+type Tab = 'match' | 'watch' | 'lineups' | 'table' | 'share' | 'calendar'
 
 const TABS: { id: Tab; label: string; when?: (f: Fixture) => boolean }[] = [
   { id: 'match', label: 'Match', when: (f) => f.status !== 'scheduled' },
   { id: 'watch', label: 'Watch' },
   { id: 'lineups', label: 'Lineups' },
   { id: 'table', label: 'Table' },
-  { id: 'calendar', label: 'Calendar', when: (f) => f.status !== 'final' },
+  { id: 'share', label: 'Share' },
+  { id: 'calendar', label: 'Calendar', when: (f) => f.status === 'scheduled' },
 ]
 
 const reviewedShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
@@ -32,8 +35,23 @@ const reviewedShort = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'n
 
 export function GameDetail() {
   const { id = '' } = useParams()
-  const { week, subscribed } = useAppState()
-  const fixture = fixtureById(id, week.fixtures)
+  const { week, subscribed, onboarded } = useAppState()
+  const [guest, setGuest] = useState<Fixture | null>(null)
+  const fixture = fixtureById(id, week.fixtures) ?? (guest?.id === id ? guest : undefined)
+
+  // A shared link opened by someone who doesn't follow either club: fetch the game on its own.
+  useEffect(() => {
+    if (fixture || !id) return
+    let cancelled = false
+    fetchFixtureById(id)
+      .then((f) => {
+        if (!cancelled && f) setGuest(f)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [fixture, id])
   const [tab, setTab] = useState<Tab | null>(null)
 
   const home = fixture ? getTeam(fixture.homeTeamId) : undefined
@@ -53,12 +71,16 @@ export function GameDetail() {
         <Link className="back" to="/">
           ← My Week
         </Link>
-        <EmptyState
-          title="Game not found"
-          body="That fixture is not in the current week window."
-          actionTo="/"
-          actionLabel="Back to My Week"
-        />
+        {guest === null && /^\d+$/.test(id ?? '') ? (
+          <p className="disclaimer">Loading this game…</p>
+        ) : (
+          <EmptyState
+            title="Game not found"
+            body="That link doesn't point at a game we can find."
+            actionTo="/"
+            actionLabel="Back to My Week"
+          />
+        )}
       </div>
     )
   }
@@ -66,9 +88,18 @@ export function GameDetail() {
   return (
     <div>
       <AppHeader />
-      <Link className="back" to="/">
-        ← My Week
-      </Link>
+      {onboarded ? (
+        <Link className="back" to="/">
+          ← My Week
+        </Link>
+      ) : (
+        <Link className="guest-banner" to="/welcome">
+          <span>
+            <strong>Pitchside</strong> — your clubs' week, in your time zone, with where to watch.
+          </span>
+          <span className="guest-cta">Get started →</span>
+        </Link>
+      )}
 
       <article className="card card-featured">
         <div className="match-head">
@@ -91,7 +122,7 @@ export function GameDetail() {
         <HighlightLink fixture={fixture} />
       </article>
 
-      <div className={`tabs ${visibleTabs.length === 5 ? 'five' : 'four'}`} role="tablist" aria-label="Game details">
+      <div className={`tabs ${visibleTabs.length >= 6 ? 'six' : visibleTabs.length === 5 ? 'five' : 'four'}`} role="tablist" aria-label="Game details">
         {visibleTabs.map((t) => (
           <button
             key={t.id}
@@ -167,6 +198,8 @@ export function GameDetail() {
           <TablePanel fixture={fixture} />
         </section>
       ) : null}
+
+      {activeTab === 'share' ? <SharePanel fixture={fixture} /> : null}
 
       {activeTab === 'calendar' ? (
         <section className="card">

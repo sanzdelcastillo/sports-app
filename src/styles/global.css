@@ -2451,3 +2451,107 @@ h3 {
   color: var(--ink-muted);
   margin-top: 3px;
 }
+
+/* ---------- Share panel ---------- */
+
+.tabs.six {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.tabs.six .tab {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.call-block {
+  margin: 4px 0 12px;
+}
+
+.option-row.inline {
+  margin-bottom: 8px;
+}
+
+.steppers {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stepper-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.stepper-controls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--paper-hi);
+}
+
+.stepper-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  color: var(--pitch-deep);
+  background: transparent;
+  border: 0;
+}
+
+.stepper-value {
+  min-width: 36px;
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+}
+
+.stepper-dash {
+  font-family: var(--display);
+  font-size: 26px;
+  padding-bottom: 6px;
+}
+
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-card);
+  background: var(--pitch-soft);
+  border: 1px solid var(--pitch-deep);
+  color: var(--pitch-deep);
+  text-decoration: none;
+  font-size: 13.5px;
+}
+
+.guest-cta {
+  flex: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.share-preview {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  margin: 10px 0 12px;
+  border: 1px solid var(--line);
+}
+
+html {
+  scroll-padding-bottom: calc(var(--nav-h, 64px) + 24px);
+}

@@ -161,3 +161,9 @@ export interface FixtureChange {
 }
 
 export type DataSource = 'live' | 'cached' | 'seed' | 'mixed'
+
+/** A score call for a game. */
+export interface Prediction {
+  home: number
+  away: number
+}

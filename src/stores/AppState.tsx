@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { DestinationId, Fixture, FixtureChange, SeenMap } from '../domain/types'
+import type { DestinationId, Fixture, FixtureChange, Prediction, SeenMap } from '../domain/types'
 import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
 import { type Setup } from '../lib/setupCode'
 import { readJson, writeJson } from '../lib/storage'
@@ -27,6 +27,7 @@ const ALERTS_KEY = 'sfp.kickoffAlerts.v1'
 const SEEN_KEY = 'sfp.seen.v1'
 const CHANGES_KEY = 'sfp.changes.v1'
 const LATER_KEY = 'sfp.watchLater.v1'
+const PREDICTIONS_KEY = 'sfp.predictions.v1'
 
 interface AppState {
   follows: string[]
@@ -58,6 +59,9 @@ interface AppState {
   watchLater: string[]
   isSavedForLater: (fixtureId: string) => boolean
   toggleWatchLater: (fixtureId: string) => void
+  /** Your score call per game, kept locally (the seed of the friends leaderboard later). */
+  predictions: Record<string, Prediction>
+  setPrediction: (fixtureId: string, prediction: Prediction | null) => void
   markWatched: (fixtureId: string) => void
   week: WeekResult
   /** 'on' once the premium livescore feed has answered; 'off' when the proxy has no key. */
@@ -87,6 +91,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     readJson<FixtureChange[]>(CHANGES_KEY, []),
   )
   const [watchLater, setWatchLater] = useState<string[]>(() => readJson<string[]>(LATER_KEY, []))
+  const [predictions, setPredictions] = useState<Record<string, Prediction>>(() => readJson<Record<string, Prediction>>(PREDICTIONS_KEY, {}))
   const [week, setWeek] = useState<WeekResult>(() => {
     const lastGood = readLastGood()
     return {
@@ -116,6 +121,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(SEEN_KEY, seen), [seen])
   useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
   useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
+  useEffect(() => writeJson(PREDICTIONS_KEY, predictions), [predictions])
 
   const refresh = useCallback(async (force = false) => {
     setLoading(true)
@@ -180,6 +186,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setSubscribed((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     )
+  }, [])
+
+  const setPrediction = useCallback((fixtureId: string, prediction: Prediction | null) => {
+    setPredictions((prev) => {
+      const next = { ...prev }
+      if (prediction) next[fixtureId] = prediction
+      else delete next[fixtureId]
+      return next
+    })
   }, [])
 
   const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
@@ -257,6 +272,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       watchLater,
       isSavedForLater,
       toggleWatchLater,
+      predictions,
+      setPrediction,
       markWatched,
       week,
       liveFeed,
@@ -288,6 +305,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       watchLater,
       isSavedForLater,
       toggleWatchLater,
+      predictions,
+      setPrediction,
       markWatched,
       week,
       liveFeed,

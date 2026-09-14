@@ -4,7 +4,6 @@ Working order. Each item moves to "Done" with the date when it ships.
 
 ## Now (web test period)
 - [ ] Julio tests the web app daily; collect the "hm" list (confusing moments, unused features, missing features, data gaps by club + date)
-- [ ] Share this game — card into WhatsApp/iMessage: kickoff in the friend's zone, where to watch, your prediction (no backend; also the cheapest growth loop)
 - [ ] Rights map: fill U.S. destinations for the popular non-European leagues as they're confirmed (Argentina, Saudi, Belgium, Denmark…)
 - [ ] Name clearance for "Pitchside": App Store, Google Play, USPTO, .app/.com, Instagram/X handles — keep a second name ready
 
@@ -36,6 +35,7 @@ Working order. Each item moves to "Done" with the date when it ships.
 - [ ] Spanish-language UI
 
 ## Done
+- 2026-09-14 — Share this game: card + text into any chat with your score call; guest game links open for anyone in their own time zone
 - 2026-09-14 — Consumer product: onboarding, any club/league/competition, device time zone, Settings/About, cups mapped
 - 2026-09-14 — Pitchside name + corner-flag mark; brand kit
 - 2026-09-14 — Native shell (Capacitor): kickoff alerts, share sheet, durable storage, icons/splash

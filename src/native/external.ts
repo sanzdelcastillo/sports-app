@@ -79,3 +79,56 @@ export async function shareFile(filename: string, content: string, mime: string)
 function apiOrigin(): string {
   return ((import.meta.env?.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
 }
+
+/**
+ * Share a game: picture + text where the platform allows both (WhatsApp, iMessage, Instagram accept files),
+ * text + link otherwise, clipboard as the last resort. Returns how it was delivered.
+ */
+export async function shareGame(opts: { title: string; text: string; url: string; image?: Blob | null; filename?: string }): Promise<'shared' | 'copied' | 'failed'> {
+  const filename = opts.filename ?? 'pitchside-game.png'
+  if (isNative()) {
+    try {
+      const files: string[] = []
+      if (opts.image) {
+        const base64 = await blobToBase64(opts.image)
+        const { uri } = await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache })
+        files.push(uri)
+      }
+      await Share.share({ title: opts.title, text: `${opts.text}`, dialogTitle: opts.title, ...(files.length ? { files } : { url: opts.url }) })
+      return 'shared'
+    } catch {
+      return 'failed'
+    }
+  }
+  const nav = typeof navigator !== 'undefined' ? navigator : undefined
+  if (nav && typeof nav.share === 'function') {
+    try {
+      if (opts.image && typeof nav.canShare === 'function') {
+        const file = new File([opts.image], filename, { type: 'image/png' })
+        if (nav.canShare({ files: [file] })) {
+          await nav.share({ title: opts.title, text: opts.text, files: [file] })
+          return 'shared'
+        }
+      }
+      await nav.share({ title: opts.title, text: opts.text, url: opts.url })
+      return 'shared'
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return 'failed'
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(opts.text)
+    return 'copied'
+  } catch {
+    return 'failed'
+  }
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(new Error('read failed'))
+    reader.readAsDataURL(blob)
+  })
+}

@@ -26,7 +26,9 @@ export default function App() {
     onAlertTap((fixtureId) => navigate(`/game/${fixtureId}`))
   }, [navigate])
 
-  if (!onboarded && location.pathname !== '/welcome') {
+  // Shared game links open for anyone; everything else waits for the welcome flow.
+  const guestOk = location.pathname === '/welcome' || location.pathname.startsWith('/game/')
+  if (!onboarded && !guestOk) {
     return <Navigate to="/welcome" replace />
   }
 
@@ -47,7 +49,7 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {inWelcome ? null : <BottomNav />}
+      {inWelcome || !onboarded ? null : <BottomNav />}
     </div>
   )
 }

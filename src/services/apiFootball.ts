@@ -213,6 +213,13 @@ export function seasonGuess(d = new Date()): number {
   return d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1
 }
 
+/** One game by id — for shared links opened by someone who doesn't follow either club. */
+export async function fetchFixtureById(id: string): Promise<Fixture | null> {
+  if (!/^\d+$/.test(id)) return null
+  const rows = await getJson<AfFixture[]>(`${AF}/fixtures?id=${id}`)
+  return rows.map(mapFixture).find((f): f is Fixture => f !== null) ?? null
+}
+
 /** Everything in play right now, one request for the whole world. */
 export async function fetchLiveFixtures(): Promise<Fixture[]> {
   const rows = await getJson<AfFixture[]>(`${AF}/fixtures?live=all`)
