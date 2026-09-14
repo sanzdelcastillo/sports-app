@@ -2575,3 +2575,54 @@ section[aria-label='Live now'] .card-featured {
 html {
   scroll-padding-bottom: calc(var(--nav-h, 64px) + 24px);
 }
+
+/* Next-up card on paper, so it never reads as a live game next to the dark live cards. */
+section[aria-label='Next up'] .featured {
+  background: var(--paper-hi);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background-image: none;
+}
+
+section[aria-label='Next up'] .featured .mono-label.light,
+section[aria-label='Next up'] .featured .featured-venue,
+section[aria-label='Next up'] .featured .featured-rest {
+  color: var(--ink-muted);
+}
+
+section[aria-label='Next up'] .featured .featured-clock,
+section[aria-label='Next up'] .featured .featured-teams,
+section[aria-label='Next up'] .featured .team-name,
+section[aria-label='Next up'] .featured .team-score {
+  color: var(--ink);
+}
+
+section[aria-label='Next up'] .featured .featured-teams::before {
+  background: var(--line);
+}
+
+section[aria-label='Next up'] .featured .featured-foot {
+  border-top-color: var(--line);
+}
+
+section[aria-label='Next up'] .featured .cta.glass-pill {
+  background: var(--pitch-deep);
+  color: var(--paper-hi);
+  border-color: var(--pitch-deep);
+}
+
+section[aria-label='Next up'] .featured .icon-btn {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+section[aria-label='Next up'] .featured .badge {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+section[aria-label='Next up'] .featured .badge.owned {
+  background: var(--pitch-soft);
+  color: var(--pitch-deep);
+  border-color: var(--pitch-deep);
+}

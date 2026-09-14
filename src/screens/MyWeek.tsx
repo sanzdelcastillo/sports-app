@@ -258,7 +258,10 @@ export function MyWeek() {
                 </section>
               ) : null}
               {featured ? (
-                <FeaturedGame fixture={featured} subscribed={subscribed} />
+                <section aria-label="Next up">
+                  {liveNow.length > 0 ? <div className="date-head">Next up</div> : null}
+                  <FeaturedGame fixture={featured} subscribed={subscribed} />
+                </section>
               ) : null}
               {upcomingGroups.map(([day, fixtures]) => (
                 <section key={`up-${day}`}>
