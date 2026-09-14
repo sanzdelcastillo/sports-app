@@ -100,7 +100,7 @@ export function mapEvent(event: SportsDbEvent): Fixture | null {
 }
 
 /** The free tier allows roughly 30 requests a minute, so requests are spaced out and 429s retried once. */
-const GAP_MS = 250
+const GAP_MS = 120
 let chain: Promise<unknown> = Promise.resolve()
 
 function spaced<T>(task: () => Promise<T>): Promise<T> {

@@ -111,8 +111,9 @@ export function MyWeek() {
     [watchLater, week.fixtures],
   )
 
-  const sourceLabel =
-    week.source === 'live'
+  const sourceLabel = loading && week.fixtures.length === 0
+    ? 'Loading fixtures…'
+    : week.source === 'live'
       ? 'Live fixtures'
       : week.source === 'mixed'
         ? 'Live fixtures + saved'
