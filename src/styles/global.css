@@ -2148,6 +2148,13 @@ h3 {
   color: var(--amber);
 }
 
+/* Fixed width so the ticking seconds never shift the layout around them. */
+.live-clock-text {
+  display: inline-block;
+  min-width: 5.2ch;
+  text-align: center;
+}
+
 .featured-clock.live-clock .live-clock-text {
   font-family: var(--display);
   font-weight: 700;
