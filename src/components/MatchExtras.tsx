@@ -310,8 +310,7 @@ export function LineupsPanel({ fixture }: { fixture: Fixture }) {
         <SideLineup team={away} lineup={data.away} away />
       </div>
       <p className="source-note">
-        Source: API-Football — lower-tier games may list only part of the eleven. Shape is counted
-        from listed positions, not an official formation.
+        Source: API-Football. Formations are as published by the clubs; lower-tier games may not have them.
       </p>
     </section>
   )
