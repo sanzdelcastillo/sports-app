@@ -41,6 +41,7 @@ export interface StandingRow {
   /** Most recent last, e.g. "WWDLW". */
   form: string
   note?: string
+  badgeUrl?: string
 }
 
 export interface LeagueTable {
@@ -72,6 +73,7 @@ interface RawTableRow {
   intPoints?: string
   strForm?: string | null
   strDescription?: string | null
+  strBadge?: string | null
 }
 
 const LINEUP_TTL_MS = 10 * 60 * 1000
@@ -173,6 +175,7 @@ export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> 
       points: toInt(r.intPoints),
       form: (r.strForm ?? '').replace(/[^WDL]/g, ''),
       note: r.strDescription ?? undefined,
+      badgeUrl: r.strBadge ?? undefined,
     }))
     .sort((a, b) => a.rank - b.rank)
   if (rows.length === 0) return cached

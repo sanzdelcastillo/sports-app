@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getTeam } from '../data/teams'
+import { getTeam, TEAM_BY_SPORTSDB } from '../data/teams'
 import type { Fixture, Team } from '../domain/types'
 import {
   fetchLineup,
@@ -130,7 +130,12 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
             return (
               <tr key={r.teamSportsDbId} className={ids.has(r.teamSportsDbId) ? 'is-us' : undefined}>
                 <td className={gap ? 'gap' : undefined}>{r.rank}</td>
-                <td className="left">{r.team}</td>
+                <td className="left">
+                  <span className="club-cell">
+                    <TableBadge row={r} />
+                    {r.team}
+                  </span>
+                </td>
                 <td>{r.played}</td>
                 <td>{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
                 <td className="pts">{r.points}</td>
@@ -146,6 +151,14 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
   )
 }
 
+/** Crest for a table row: our catalogue if we know the club, else the feed's tiny badge. */
+function TableBadge({ row }: { row: StandingRow }) {
+  const known = TEAM_BY_SPORTSDB[row.teamSportsDbId]
+  const src = known?.espnLogoUrl ?? known?.badgeUrl ?? row.badgeUrl
+  if (!src) return <span className="table-badge empty" aria-hidden="true" />
+  return <img className="table-badge" src={src} alt="" loading="lazy" width={20} height={20} />
+}
+
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd']
   const v = n % 100
@@ -154,9 +167,32 @@ function ordinal(n: number): string {
 
 /* ---------- Lineups ---------- */
 
+function PlayerPhoto({ player }: { player: LineupPlayer }) {
+  const [failed, setFailed] = useState(false)
+  if (!player.cutoutUrl || failed) {
+    return (
+      <span className="player-photo fallback" aria-hidden="true">
+        {player.number ?? '·'}
+      </span>
+    )
+  }
+  return (
+    <img
+      className="player-photo"
+      src={player.cutoutUrl}
+      alt=""
+      loading="lazy"
+      width={30}
+      height={30}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 function PlayerLine({ player }: { player: LineupPlayer }) {
   return (
     <li className="player">
+      <PlayerPhoto player={player} />
       <span className="player-num">{player.number ?? '–'}</span>
       <span className="player-name">{player.name}</span>
       <span className="player-slot">{player.slot === 'SUB' ? '' : player.slot}</span>

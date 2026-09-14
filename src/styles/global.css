@@ -1550,6 +1550,25 @@ h3 {
   text-align: left;
 }
 
+.club-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-badge {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: none;
+}
+
+.table-badge.empty {
+  display: inline-block;
+  border-radius: 50%;
+  background: var(--line-soft);
+}
+
 .standings td.pts {
   font-family: var(--display);
   font-weight: 700;
@@ -1642,10 +1661,38 @@ h3 {
 
 .player {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
-  align-items: baseline;
+  grid-template-columns: 30px 24px 1fr auto;
+  align-items: center;
   gap: 8px;
   padding: 3px 0;
+}
+
+.player-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  flex: none;
+}
+
+.player-photo.fallback {
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.lineup-side + .lineup-side .player-photo {
+  background: rgba(251, 248, 240, 0.12);
+  border-color: rgba(251, 248, 240, 0.25);
+}
+
+.lineup-side + .lineup-side .player-photo.fallback {
+  color: rgba(251, 248, 240, 0.7);
 }
 
 .player-num {
