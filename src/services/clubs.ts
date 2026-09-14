@@ -1,5 +1,5 @@
 import { LEAGUES } from '../data/leagues'
-import { dynamicTeamId, registerTeams, teamBySportsDb } from '../data/teams'
+import { dynamicTeamId, registerTeams, restoreRegistry, teamBySportsDb } from '../data/teams'
 import type { LeagueId, Team } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
 import { getJson, V2 } from './theSportsDb'
@@ -36,6 +36,11 @@ function shortNameFor(raw: RawTeam): string {
 function hexOr(value: string | null | undefined, fallback: string): string {
   const v = (value ?? '').trim()
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback
+}
+
+/** A club record from any feed object that carries idTeam/strTeam (league lists and events alike). */
+export function teamFromFeed(raw: RawTeam, leagueId: LeagueId): Team | null {
+  return mapClub(raw, leagueId)
 }
 
 export function mapClub(raw: RawTeam, leagueId: LeagueId): Team | null {
@@ -86,7 +91,8 @@ export function rememberCustomTeams(follows: string[]): void {
   writeJson(CUSTOM_KEY, custom)
 }
 
-/** Call once on boot. */
+/** Call once on boot: restore every feed club this phone has seen, so cached fixtures render with names. */
 export function bootTeams(): void {
   registerTeams(readCustomTeams())
+  restoreRegistry()
 }

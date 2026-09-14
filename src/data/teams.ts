@@ -511,16 +511,71 @@ function aliasesFor(t: Team): string[] {
   return keys
 }
 
-/** Add or replace clubs. A fetched club that matches a static one by feed id keeps the static entry. */
+const REGISTRY_KEY = 'sfp.teamRegistry.v1'
+const REGISTRY_CAP = 600
+/** Feed clubs get ids like t133619; core clubs have short slugs. */
+const isFeedId = (id: string): boolean => /^t\d+$/.test(id)
+/** Nothing is persisted until the stored registry has been read back, so startup can't clobber it. */
+let restored = false
+
+function compact(t: Team): Partial<Team> {
+  const out: Partial<Team> = {}
+  for (const [k, v] of Object.entries(t) as [keyof Team, Team[keyof Team]][]) {
+    if (v !== '' && v !== undefined && v !== null) (out as Record<string, unknown>)[k] = v
+  }
+  return out
+}
+
+/**
+ * Add or update clubs. The static core always wins over feed data; among feed clubs, newer non-empty
+ * fields win but the id stays stable so follows keep working.
+ */
 export function registerTeams(teams: Team[]): void {
+  let changed = false
   for (const t of teams) {
     const existing = bySportsDb.get(t.sportsDbId)
-    const merged: Team = existing ? { ...t, ...existing, followable: true } : t
+    let merged: Team
+    if (!existing) merged = t
+    else if (!isFeedId(existing.id)) merged = { ...t, ...existing, followable: true }
+    else merged = { ...existing, ...compact(t), id: existing.id }
+    if (existing && JSON.stringify(existing) === JSON.stringify(merged)) continue
     byId.set(merged.id, merged)
     bySportsDb.set(merged.sportsDbId, merged)
     for (const k of aliasesFor(merged)) byName.set(k, merged)
+    changed = true
   }
-  version += 1
+  if (changed) {
+    version += 1
+    persistRegistry()
+  }
+}
+
+function persistRegistry(): void {
+  if (!restored || typeof localStorage === 'undefined') return
+  try {
+    const dynamic = [...byId.values()].filter((t) => isFeedId(t.id)).slice(-REGISTRY_CAP)
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(dynamic))
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+/** Re-register every feed club stored on this device. Safe to call before any fixture is read. */
+export function restoreRegistry(): void {
+  if (restored) return
+  if (typeof localStorage === 'undefined') {
+    restored = true
+    return
+  }
+  try {
+    const raw = localStorage.getItem(REGISTRY_KEY)
+    const teams = raw ? (JSON.parse(raw) as Team[]) : []
+    if (Array.isArray(teams)) registerTeams(teams.filter((t) => t && typeof t.id === 'string' && t.sportsDbId))
+  } catch {
+    /* ignore */
+  } finally {
+    restored = true
+  }
 }
 
 registerTeams(TEAMS)

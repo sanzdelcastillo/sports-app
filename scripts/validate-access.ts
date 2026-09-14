@@ -11,6 +11,8 @@ import { favoritesComplete } from '../src/services/fixtures'
 import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
 import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/services/matchExtras'
 import { mapClub } from '../src/services/clubs'
+import { mapEvent } from '../src/services/theSportsDb'
+import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 
 let failures = 0
@@ -153,6 +155,17 @@ expect(applyLive(same, []) === same, 'empty update returns the same array')
 expect(anyInPlay([epl], new Date('2026-09-19T14:30:00Z')), 'thirty minutes after kickoff counts as in play')
 expect(!anyInPlay([epl], new Date('2026-09-19T18:00:00Z')), 'four hours after kickoff does not')
 expect(!anyInPlay([{ ...epl, status: 'final' }], new Date('2026-09-19T14:30:00Z')), 'finished games never poll')
+
+console.log('Feed timestamps and unknown opponents')
+const cupTie = mapEvent({
+  idEvent: '999001', strTimestamp: '2026-09-15T19:00:00', dateEvent: '2026-09-15', strTime: '19:00:00',
+  idHomeTeam: '133622', strHomeTeam: 'Ipswich Town', idAwayTeam: '133604', strAwayTeam: 'Arsenal',
+  idLeague: '4570', strLeague: 'EFL Cup', strStatus: 'Not Started',
+} as never)
+expect(cupTie?.kickoffUtc === '2026-09-15T19:00:00.000Z', 'zone-less feed timestamp is read as UTC, not local')
+expect(cupTie?.leagueId === 'eflcup', 'EFL Cup recognised')
+expect(getTeam(cupTie?.homeTeamId ?? '')?.name === 'Ipswich Town', 'opponent unknown to the app gets a real record from the event')
+expect(getTeam(cupTie?.awayTeamId ?? '')?.id === 'ars', 'known club keeps its core id')
 
 console.log('TV listings and language')
 const tv = mapTv([

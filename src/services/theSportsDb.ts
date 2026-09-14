@@ -1,6 +1,7 @@
 import { LEAGUES, leagueFromSportsDb } from '../data/leagues'
-import { resolveTeam, teamBySportsDb } from '../data/teams'
-import type { Fixture, FixtureStatus, Team } from '../domain/types'
+import { registerTeams, resolveTeam, teamBySportsDb } from '../data/teams'
+import { teamFromFeed } from './clubs'
+import type { Fixture, FixtureStatus, Team, LeagueId } from '../domain/types'
 
 /**
  * All calls go through our proxy so the premium key stays on the server.
@@ -21,6 +22,8 @@ interface SportsDbEvent {
   idLeague?: string
   strHomeTeam?: string
   strAwayTeam?: string
+  strHomeTeamBadge?: string | null
+  strAwayTeamBadge?: string | null
   idHomeTeam?: string
   idAwayTeam?: string
   intHomeScore?: string | null
@@ -33,7 +36,9 @@ interface SportsDbEvent {
 
 function toIso(event: SportsDbEvent): string | null {
   if (event.strTimestamp) {
-    const d = new Date(event.strTimestamp)
+    // The feed's timestamps are UTC but carry no zone marker; without the Z a browser would read them as local time.
+    const stamp = /[zZ]|[+-]\d\d:?\d\d$/.test(event.strTimestamp) ? event.strTimestamp : `${event.strTimestamp}Z`
+    const d = new Date(stamp)
     if (!Number.isNaN(d.getTime())) return d.toISOString()
   }
   if (!event.dateEvent) return null
@@ -67,22 +72,32 @@ function parseScore(value?: string | null): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function teamFromEvent(id?: string, name?: string): Team | undefined {
+/**
+ * Resolve a club from an event. Unknown clubs (a cup opponent from a lower league, say) are created
+ * from the event itself so every game shows two real names, and remembered for next time.
+ */
+function teamFromEvent(id: string | undefined, name: string | undefined, badge: string | undefined, leagueId: LeagueId): Team | undefined {
   if (id) {
     const known = teamBySportsDb(id)
     if (known) return known
   }
-  if (name) return resolveTeam(name)
-  return undefined
+  if (name) {
+    const byName = resolveTeam(name)
+    if (byName) return byName
+  }
+  if (!id || !name) return undefined
+  const created = teamFromFeed({ idTeam: id, strTeam: name, strBadge: badge ?? null }, leagueId) ?? undefined
+  if (created) registerTeams([created])
+  return created
 }
 
 export function mapEvent(event: SportsDbEvent): Fixture | null {
-  const home = teamFromEvent(event.idHomeTeam, event.strHomeTeam)
-  const away = teamFromEvent(event.idAwayTeam, event.strAwayTeam)
+  const leagueId = leagueFromSportsDb(event.idLeague, event.strLeague)
+  const home = teamFromEvent(event.idHomeTeam, event.strHomeTeam, event.strHomeTeamBadge ?? undefined, leagueId)
+  const away = teamFromEvent(event.idAwayTeam, event.strAwayTeam, event.strAwayTeamBadge ?? undefined, leagueId)
   const kickoffUtc = toIso(event)
   if (!home || !away || !kickoffUtc || !event.idEvent) return null
 
-  const leagueId = leagueFromSportsDb(event.idLeague, event.strLeague)
   const leagueName = leagueId === 'other' ? event.strLeague || 'Soccer' : LEAGUES[leagueId].name
 
   return {
