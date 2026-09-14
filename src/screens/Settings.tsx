@@ -9,6 +9,8 @@ import { isNative } from '../native/platform'
 import { useAppState } from '../stores/AppState'
 
 const APP_VERSION = '1.1.0'
+/** Where tester feedback goes. Change to your address before sharing the app. */
+const FEEDBACK_EMAIL = 'feedback@pitchside.app'
 
 export function Settings() {
   const {
@@ -156,6 +158,16 @@ export function Settings() {
           broadcaster. Club crests and player images belong to their owners.
         </p>
       </div>
+
+      <div className="date-head">Feedback</div>
+      <a
+        className="cta secondary wide"
+        href={`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(`Pitchside ${APP_VERSION} feedback`)}&body=${encodeURIComponent(
+          `What I was doing:\n\nWhat I expected:\n\nWhat happened:\n\n— ${follows.length} clubs, ${subscribed.length} apps, ${DEFAULT_TIME_ZONE}`,
+        )}`}
+      >
+        Send feedback
+      </a>
 
       <div className="date-head">Reset</div>
       {confirmClear ? (
