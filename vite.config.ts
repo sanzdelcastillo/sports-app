@@ -2,7 +2,7 @@ import { defineConfig, loadEnv, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 
 /**
- * Local stand-in for api/sportsdb/[...path].js so `npm run dev` and `npm run preview`
+ * Local stand-in for api/sportsdb.js so `npm run dev` and `npm run preview`
  * behave like the deployed site. Reads SPORTSDB_KEY from .env.local (never bundled).
  */
 function sportsDbProxy(key: string | undefined): Record<string, ProxyOptions> {
@@ -15,7 +15,9 @@ function sportsDbProxy(key: string | undefined): Record<string, ProxyOptions> {
         const m = path.match(/^\/api\/sportsdb\/(v1|v2)\/(.*)$/)
         if (!m) return path
         const [, version, rest] = m
-        return version === 'v1' ? `/api/v1/json/${key || '123'}/${rest}` : `/api/v2/json/${rest}`
+        if (version === 'v2') return `/api/v2/json/${rest}`
+        const [endpoint, qs] = rest.split('?')
+        return `/api/v1/json/${key || '123'}/${endpoint.replace(/\.php$/, '')}.php${qs ? `?${qs}` : ''}`
       },
     },
   }

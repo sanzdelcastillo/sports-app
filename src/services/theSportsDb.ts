@@ -144,8 +144,8 @@ export async function getJson<T>(url: string, retry = true): Promise<T> {
 
 export async function fetchTeamEvents(sportsDbId: string): Promise<Fixture[]> {
   const [next, last] = await Promise.all([
-    getJson<{ events: SportsDbEvent[] | null }>(`${BASE}/eventsnext.php?id=${sportsDbId}`),
-    getJson<{ results: SportsDbEvent[] | null }>(`${BASE}/eventslast.php?id=${sportsDbId}`),
+    getJson<{ events: SportsDbEvent[] | null }>(`${BASE}/eventsnext?id=${sportsDbId}`),
+    getJson<{ results: SportsDbEvent[] | null }>(`${BASE}/eventslast?id=${sportsDbId}`),
   ])
   const raw = [...(next.events ?? []), ...(last.results ?? [])]
   return raw.map(mapEvent).filter((f): f is Fixture => f !== null)

@@ -142,7 +142,7 @@ export async function fetchLineup(fixture: Fixture): Promise<MatchLineup | null>
   // A finished match's lineup won't change; a scheduled one might, so re-check every few minutes.
   if (cached && (fixture.status === 'final' || fresh(cached.fetchedAt, LINEUP_TTL_MS))) return cached
 
-  const data = await getJson<{ lineup: RawLineup[] | null }>(`${BASE}/lookuplineup.php?id=${fixture.id}`)
+  const data = await getJson<{ lineup: RawLineup[] | null }>(`${BASE}/lookuplineup?id=${fixture.id}`)
   const raw = data.lineup ?? []
   if (raw.length === 0) return cached
   const grouped = groupLineup(raw)
@@ -160,7 +160,7 @@ export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> 
   if (cached && fresh(cached.fetchedAt, TABLE_TTL_MS)) return cached
 
   const data = await getJson<{ table: RawTableRow[] | null }>(
-    `${BASE}/lookuptable.php?l=${league.sportsDbId}&s=${encodeURIComponent(season)}`,
+    `${BASE}/lookuptable?l=${league.sportsDbId}&s=${encodeURIComponent(season)}`,
   )
   const rows = (data.table ?? [])
     .map<StandingRow>((r) => ({
@@ -240,7 +240,7 @@ export async function fetchTvListings(fixture: Fixture): Promise<TvListings | nu
   const key = `sfp.tv.${fixture.id}`
   const cached = readJson<TvListings | null>(key, null)
   if (cached && (fixture.status === 'final' || fresh(cached.fetchedAt, TV_TTL_MS))) return cached
-  const data = await getJson<{ tvevent: RawTv[] | null }>(`${BASE}/lookuptv.php?id=${fixture.id}`)
+  const data = await getJson<{ tvevent: RawTv[] | null }>(`${BASE}/lookuptv?id=${fixture.id}`)
   const result: TvListings = { us: mapTv(data.tvevent ?? []), fetchedAt: new Date().toISOString() }
   writeJson(key, result)
   return result

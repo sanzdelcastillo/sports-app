@@ -77,7 +77,7 @@ Native-only behaviour lives in `src/native/`: kickoff alerts via local notificat
 
 The key is read on the server, never shipped to the browser. All data calls go to `/api/sportsdb/...`:
 
-- **Deployed (Vercel):** `api/sportsdb/[...path].js` is a serverless function. It injects `SPORTSDB_KEY` for v1 calls and sends it as `X-API-KEY` for v2, allows only the endpoints the app uses, and sets edge cache headers so many phones share one upstream request.
+- **Deployed (Vercel):** `api/sportsdb.js` is a serverless function. It injects `SPORTSDB_KEY` for v1 calls and sends it as `X-API-KEY` for v2, allows only the endpoints the app uses, and sets edge cache headers so many phones share one upstream request.
 - **Local:** `vite.config.ts` proxies the same paths, reading `SPORTSDB_KEY` from `.env.local` (git-ignored). Copy `.env.example` to `.env.local` and paste the key.
 - **Without a key:** v1 falls back to the free key (one upcoming game per club, 30 req/min); v2 answers 503 and the app quietly turns live scores off.
 

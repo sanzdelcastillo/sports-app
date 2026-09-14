@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/sportsdb/:version/:rest*", "destination": "/api/sportsdb?version=:version&rest=:rest*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
