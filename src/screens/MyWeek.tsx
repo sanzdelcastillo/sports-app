@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, featuredKicker, GameCardSkeleton, GameRow } from '../components/GameCard'
+import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
+import type { FixtureChange } from '../domain/types'
 import { formatKickoff } from '../lib/time'
+import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
 function coverageLine(c: ReturnType<typeof coverageFor>): string {
@@ -18,8 +21,38 @@ function coverageLine(c: ReturnType<typeof coverageFor>): string {
   return parts.join(' · ')
 }
 
+function changeSentence(change: FixtureChange, fixtures: ReturnType<typeof useAppState>['week']['fixtures']): string | null {
+  const fixture = fixtureById(change.fixtureId, fixtures)
+  if (!fixture) return null
+  const home = getTeam(fixture.homeTeamId)?.shortName ?? fixture.homeTeamId
+  const away = getTeam(fixture.awayTeamId)?.shortName ?? fixture.awayTeamId
+  const matchup = `${home} vs ${away}`
+  if (change.kind === 'postponed') return `${matchup} is postponed`
+  if (change.from && change.to) {
+    const was = formatKickoff(change.from)
+    const now = formatKickoff(change.to)
+    const sameDay = was.dateKey === now.dateKey
+    return sameDay
+      ? `${matchup} moved to ${now.time} (was ${was.time})`
+      : `${matchup} moved to ${now.day} ${now.time} (was ${was.day} ${was.time})`
+  }
+  return `${matchup} changed`
+}
+
 export function MyWeek() {
-  const { follows, week, loading, refresh, subscribed, hideScores, toggleHideScores } = useAppState()
+  const {
+    follows,
+    week,
+    loading,
+    refresh,
+    subscribed,
+    hideScores,
+    toggleHideScores,
+    changes,
+    dismissChanges,
+    watchLater,
+    markWatched,
+  } = useAppState()
 
   const { featured, upcomingGroups, recentGroups } = useMemo(() => {
     const upcoming = week.fixtures.filter((f) => f.status !== 'final')
@@ -49,6 +82,20 @@ export function MyWeek() {
   const coverage = useMemo(
     () => coverageFor(week.fixtures.filter((f) => f.status !== 'final'), subscribed),
     [week.fixtures, subscribed],
+  )
+
+  const changeLines = useMemo(
+    () => changes.map((c) => changeSentence(c, week.fixtures)).filter((line): line is string => Boolean(line)),
+    [changes, week.fixtures],
+  )
+
+  const laterFixtures = useMemo(
+    () =>
+      watchLater
+        .map((id) => fixtureById(id, week.fixtures))
+        .filter((f): f is NonNullable<typeof f> => Boolean(f))
+        .sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc)),
+    [watchLater, week.fixtures],
   )
 
   const sourceLabel =
@@ -95,6 +142,36 @@ export function MyWeek() {
           </div>
         ) : null}
       </section>
+
+      {changeLines.length > 0 ? (
+        <section className="card changes-strip" aria-label="Schedule changes since your last visit">
+          <div className="changes-head">
+            <strong>Since your last visit</strong>
+            <button type="button" className="text-btn" onClick={dismissChanges}>
+              Got it
+            </button>
+          </div>
+          <ul className="changes-list">
+            {changeLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {laterFixtures.length > 0 ? (
+        <section aria-label="Catch up later">
+          <div className="section-label">Catch up later · scores hidden</div>
+          {laterFixtures.map((fixture) => (
+            <div key={`later-${fixture.id}`} className="later-item">
+              <GameRow fixture={fixture} subscribed={subscribed} />
+              <button type="button" className="cta glass-pill compact later-done" onClick={() => markWatched(fixture.id)}>
+                Watched — show score
+              </button>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       {follows.length === 0 ? (
         <EmptyState

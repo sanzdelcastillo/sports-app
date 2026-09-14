@@ -87,3 +87,20 @@ export function CheckIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function BookmarkIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.7" {...props}>
+      <path d="M7 4.5h10a1 1 0 0 1 1 1V20l-6-3.6L6 20V5.5a1 1 0 0 1 1-1Z" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function CalendarPlusIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" {...props}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.4" />
+      <path d="M8 3.5v3M16 3.5v3M3.5 9.5h17M12 12v5M9.5 14.5h5" strokeLinecap="round" />
+    </svg>
+  )
+}

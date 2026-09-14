@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 import { SEED_FOLLOW_IDS } from '../data/teams'
-import type { DestinationId, Fixture, Reminder } from '../domain/types'
+import type { DestinationId, Fixture, FixtureChange, Reminder, SeenMap } from '../domain/types'
+import { diffWeek, mergeChanges, snapshotWeek } from '../lib/changes'
 import { readJson, writeJson } from '../lib/storage'
 import { loadFollowedWeek, seedWeek, type WeekResult } from '../services/fixtures'
 
@@ -16,6 +17,9 @@ const FOLLOWS_KEY = 'sfp.follows.v1'
 const SUBS_KEY = 'sfp.subscriptions.v1'
 const REMIND_KEY = 'sfp.reminders.v1'
 const SPOILER_KEY = 'sfp.hideScores.v1'
+const SEEN_KEY = 'sfp.seen.v1'
+const CHANGES_KEY = 'sfp.changes.v1'
+const LATER_KEY = 'sfp.watchLater.v1'
 
 interface AppState {
   follows: string[]
@@ -29,6 +33,15 @@ interface AppState {
   /** Spoiler protection: hide scores for live and finished games until revealed. */
   hideScores: boolean
   toggleHideScores: () => void
+  /** Kickoff moves and postponements spotted since the last visit, until dismissed. */
+  changes: FixtureChange[]
+  changeFor: (fixtureId: string) => FixtureChange | undefined
+  dismissChanges: () => void
+  /** Games saved to catch up on later. Their scores stay hidden until marked watched. */
+  watchLater: string[]
+  isSavedForLater: (fixtureId: string) => boolean
+  toggleWatchLater: (fixtureId: string) => void
+  markWatched: (fixtureId: string) => void
   week: WeekResult
   loading: boolean
   refresh: () => Promise<void>
@@ -50,6 +63,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hideScores, setHideScores] = useState<boolean>(() =>
     readJson<boolean>(SPOILER_KEY, false),
   )
+  const [seen, setSeen] = useState<SeenMap>(() => readJson<SeenMap>(SEEN_KEY, {}))
+  const [changes, setChanges] = useState<FixtureChange[]>(() =>
+    readJson<FixtureChange[]>(CHANGES_KEY, []),
+  )
+  const [watchLater, setWatchLater] = useState<string[]>(() => readJson<string[]>(LATER_KEY, []))
   const [week, setWeek] = useState<WeekResult>(() => ({
     fixtures: seedWeek(readJson<string[]>(FOLLOWS_KEY, SEED_FOLLOW_IDS)),
     source: 'seed',
@@ -61,11 +79,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(SUBS_KEY, subscribed), [subscribed])
   useEffect(() => writeJson(REMIND_KEY, reminders), [reminders])
   useEffect(() => writeJson(SPOILER_KEY, hideScores), [hideScores])
+  useEffect(() => writeJson(SEEN_KEY, seen), [seen])
+  useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
+  useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
 
   const refresh = useCallback(async () => {
     setLoading(true)
     const next = await loadFollowedWeek(follows)
     setWeek(next)
+    // Only trust live data for change detection — seed fixtures are a stale snapshot by design.
+    if (next.source === 'live') {
+      setSeen((prev) => {
+        const found = diffWeek(prev, next.fixtures)
+        if (found.length) setChanges((existing) => mergeChanges(existing, found))
+        return snapshotWeek(prev, next.fixtures)
+      })
+    }
     setLoading(false)
   }, [follows])
 
@@ -95,6 +124,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
 
+  const changeFor = useCallback(
+    (fixtureId: string) => changes.find((c) => c.fixtureId === fixtureId),
+    [changes],
+  )
+  const dismissChanges = useCallback(() => setChanges([]), [])
+
+  const isSavedForLater = useCallback((fixtureId: string) => watchLater.includes(fixtureId), [watchLater])
+  const toggleWatchLater = useCallback((fixtureId: string) => {
+    setWatchLater((prev) =>
+      prev.includes(fixtureId) ? prev.filter((id) => id !== fixtureId) : [...prev, fixtureId],
+    )
+  }, [])
+  const markWatched = useCallback((fixtureId: string) => {
+    setWatchLater((prev) => prev.filter((id) => id !== fixtureId))
+  }, [])
+
   const hasReminder = useCallback(
     (fixtureId: string) => reminders.some((r) => r.fixtureId === fixtureId),
     [reminders],
@@ -114,6 +159,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleReminder,
       hideScores,
       toggleHideScores,
+      changes,
+      changeFor,
+      dismissChanges,
+      watchLater,
+      isSavedForLater,
+      toggleWatchLater,
+      markWatched,
       week,
       loading,
       refresh,
@@ -130,6 +182,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleReminder,
       hideScores,
       toggleHideScores,
+      changes,
+      changeFor,
+      dismissChanges,
+      watchLater,
+      isSavedForLater,
+      toggleWatchLater,
+      markWatched,
       week,
       loading,
       refresh,

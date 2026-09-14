@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
+import { buildIcs, downloadIcs } from '../lib/ics'
 import { buildWeekText } from '../lib/shareWeek'
 import { useAppState } from '../stores/AppState'
 
@@ -76,6 +77,28 @@ export function ShareWeek() {
       <pre className="share-text" aria-label="Week as text">
         {text}
       </pre>
+
+      <h2 style={{ margin: '20px 0 6px', fontSize: 18 }}>Or add the whole week to a calendar</h2>
+      <p className="disclaimer">
+        One file with every upcoming game. Open it on your phone or computer and your calendar imports them all. Each
+        game keeps a stable ID, so importing again after a schedule change updates events rather than duplicating them.
+      </p>
+      <button
+        type="button"
+        className="cta glass-pill wide"
+        onClick={() =>
+          downloadIcs(
+            'my-week',
+            buildIcs(
+              week.fixtures.filter((f) => f.status !== 'final'),
+              subscribed,
+              'My Week',
+            ),
+          )
+        }
+      >
+        Download calendar file
+      </button>
 
       <p className="lock-note">Built from your followed clubs. No scores are included, so it is safe to send.</p>
     </div>

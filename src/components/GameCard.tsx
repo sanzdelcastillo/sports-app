@@ -5,6 +5,7 @@ import type { DestinationId, Fixture } from '../domain/types'
 import { scoreLabel } from '../lib/status'
 import { formatKickoff } from '../lib/time'
 import { useAppState } from '../stores/AppState'
+import { BookmarkIcon } from './icons'
 import { TeamCrest } from './TeamCrest'
 import { AccessChip, MatchStatusBadge, WatchCta } from './WatchCta'
 
@@ -36,13 +37,14 @@ export function Scoreboard({
   size?: 'sm' | 'lg'
   names?: 'short' | 'full'
 }) {
-  const { hideScores } = useAppState()
+  const { hideScores, isSavedForLater } = useAppState()
   const home = getTeam(fixture.homeTeamId)
   const away = getTeam(fixture.awayTeamId)
   const kick = formatKickoff(fixture.kickoffUtc)
   const crestSize = size === 'lg' ? 'lg' : 'sm'
   const showRecords = names === 'full' || Boolean(fixture.awayRecord || fixture.homeRecord)
-  const masked = hideScores && fixture.status !== 'scheduled'
+  // A game saved for later never leaks its score, whatever the global setting says.
+  const masked = (hideScores || isSavedForLater(fixture.id)) && fixture.status !== 'scheduled'
 
   return (
     <div className={`scoreboard ${size}`}>
@@ -75,13 +77,48 @@ export function Scoreboard({
   )
 }
 
+export function ChangeBadge({ fixtureId }: { fixtureId: string }) {
+  const { changeFor } = useAppState()
+  const change = changeFor(fixtureId)
+  if (!change) return null
+  if (change.kind === 'postponed') return <span className="badge warn">Postponed</span>
+  const was = change.from ? formatKickoff(change.from) : null
+  return (
+    <span className="badge moved" title={was ? `Was ${was.day} ${was.time}` : undefined}>
+      Moved{was ? ` · was ${was.time}` : ''}
+    </span>
+  )
+}
+
 function CardRail({ fixture }: { fixture: Fixture }) {
   const league = LEAGUES[fixture.leagueId]
   return (
     <div className="card-rail">
       <span className="badge ghost">{league.shortName}</span>
       <MatchStatusBadge status={fixture.status} />
+      <ChangeBadge fixtureId={fixture.id} />
     </div>
+  )
+}
+
+export function SaveLaterButton({ fixtureId, compact = false }: { fixtureId: string; compact?: boolean }) {
+  const { isSavedForLater, toggleWatchLater } = useAppState()
+  const saved = isSavedForLater(fixtureId)
+  return (
+    <button
+      type="button"
+      className={`icon-btn${compact ? ' compact' : ''}`}
+      aria-label={saved ? 'Remove from catch up later' : 'Save to catch up later'}
+      aria-pressed={saved}
+      title={saved ? 'Saved — score stays hidden until you mark it watched' : 'Save for later — hides the score'}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        toggleWatchLater(fixtureId)
+      }}
+    >
+      <BookmarkIcon width={compact ? 16 : 20} height={compact ? 16 : 20} filled={saved} />
+    </button>
   )
 }
 
@@ -100,7 +137,10 @@ function CardActions({
         <AccessChip fixture={fixture} subscribed={subscribed} />
         {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
       </div>
-      <WatchCta fixture={fixture} subscribed={subscribed} compact={compact} />
+      <div className="row-tools">
+        <SaveLaterButton fixtureId={fixture.id} compact />
+        <WatchCta fixture={fixture} subscribed={subscribed} compact={compact} />
+      </div>
     </div>
   )
 }

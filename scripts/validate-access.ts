@@ -4,6 +4,8 @@
  */
 import { accessFor, coverageFor, PROVIDERS, RIGHTS_REVIEWED_ON } from '../src/data/watch'
 import type { DestinationId, Fixture, LeagueId } from '../src/domain/types'
+import { diffWeek, mergeChanges, snapshotWeek } from '../src/lib/changes'
+import { buildIcs, escapeIcs } from '../src/lib/ics'
 import { buildWeekText } from '../src/lib/shareWeek'
 
 let failures = 0
@@ -72,6 +74,32 @@ for (const p of PROVIDERS) {
   ids.add(p.id)
   expect(p.url.startsWith('https://'), `${p.shortName} has an https url`)
 }
+
+console.log('Schedule changes between visits')
+const before = snapshotWeek({}, [epl, ucl])
+const moved = { ...epl, kickoffUtc: '2026-09-19T16:30:00Z' }
+const postponed = { ...ucl, status: 'unknown' as const, statusDetail: 'Postponed' }
+const diffs = diffWeek(before, [moved, postponed, buli])
+expect(diffs.length === 2, 'one move and one postponement detected, new game ignored')
+expect(diffs.some((d) => d.kind === 'moved' && d.fixtureId === 'epl-1' && d.from === epl.kickoffUtc), 'move keeps the old kickoff')
+expect(diffs.some((d) => d.kind === 'postponed' && d.fixtureId === 'ucl-1'), 'postponement flagged from status detail')
+expect(diffWeek(before, [{ ...epl, status: 'final', kickoffUtc: '2026-09-19T16:30:00Z' }]).length === 0, 'finished games never count as moved')
+expect(mergeChanges(diffs, diffs).length === 2, 'merging the same changes twice does not duplicate')
+const after = snapshotWeek(before, [moved])
+expect(after['epl-1'].kickoffUtc === moved.kickoffUtc, 'snapshot updates to the new kickoff')
+const old = snapshotWeek({ stale: { kickoffUtc: '2026-01-01T00:00:00Z', status: 'final' } }, [], new Date('2026-09-14T00:00:00Z'))
+expect(!('stale' in old), 'snapshot drops entries older than two weeks')
+
+console.log('Calendar file')
+const ics = buildIcs([epl, buli], ['peacock'], 'My Week', new Date('2026-09-14T00:00:00Z'))
+expect(ics.startsWith('BEGIN:VCALENDAR\r\n'), 'starts with VCALENDAR')
+expect(ics.includes('UID:epl-1@sports-fan-planner'), 'UID is the stable fixture id')
+expect(ics.includes('DTSTART:20260919T140000Z'), 'kickoff written in UTC')
+expect(ics.includes('DURATION:PT2H'), 'two-hour duration')
+expect(ics.includes('Peacock (in your apps)'), 'access note in description')
+expect(ics.split('BEGIN:VEVENT').length - 1 === 2, 'one VEVENT per fixture')
+expect(escapeIcs('a,b;c\nd') === 'a\\,b\\;c\\nd', 'escapes commas, semicolons, newlines')
+expect(ics.split('\r\n').every((line) => line.length <= 75), 'no line exceeds 75 characters')
 
 if (failures) {
   console.log(`\n${failures} check(s) failed`)

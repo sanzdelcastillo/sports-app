@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
-import { Scoreboard } from '../components/GameCard'
-import { ClockIcon } from '../components/icons'
+import { ChangeBadge, SaveLaterButton, Scoreboard } from '../components/GameCard'
+import { CalendarPlusIcon, ClockIcon } from '../components/icons'
 import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { LEAGUES } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { destinationsForFixture, primaryDestination, RIGHTS_REVIEWED_ON } from '../data/watch'
+import { buildIcs, downloadIcs } from '../lib/ics'
 import { formatVenueDate } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { newsForFixture } from '../services/news'
@@ -78,10 +79,12 @@ export function GameDetail() {
           >
             <ClockIcon width={20} height={20} />
           </button>
+          <SaveLaterButton fixtureId={fixture.id} />
         </div>
         <div className="badges" style={{ marginTop: 12 }}>
           <AvailabilityBadge availability={primary.availability} />
           <AccessChip fixture={fixture} subscribed={subscribed} />
+          <ChangeBadge fixtureId={fixture.id} />
           {fixture.mustWatch ? <span className="badge must">★ Must-watch</span> : null}
         </div>
       </article>
@@ -139,6 +142,19 @@ export function GameDetail() {
           </p>
           <button type="button" className="cta glass-pill wide" onClick={() => toggleReminder(fixture.id)}>
             {hasReminder(fixture.id) ? 'Remove reminder' : 'Remind me'}
+          </button>
+          <h2 style={{ margin: '18px 0 8px', fontSize: 18 }}>Add to your calendar</h2>
+          <p className="disclaimer">
+            Downloads a calendar file with the kickoff in your time zone and where to watch in the notes. If the
+            kickoff moves, download again — your calendar updates the same event instead of adding a second one.
+          </p>
+          <button
+            type="button"
+            className="cta glass-pill wide"
+            onClick={() => downloadIcs(`${away.shortName}-${home.shortName}`, buildIcs([fixture], subscribed, `${away.name} vs ${home.name}`))}
+          >
+            <CalendarPlusIcon width={18} height={18} aria-hidden="true" />
+            Add to calendar
           </button>
         </section>
       ) : null}

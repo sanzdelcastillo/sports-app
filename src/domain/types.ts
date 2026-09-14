@@ -106,4 +106,25 @@ export interface Reminder {
   createdAt: string
 }
 
+/** Compact record of a fixture as last seen, used to spot schedule changes between visits. */
+export interface SeenFixture {
+  kickoffUtc: string
+  status: FixtureStatus
+  statusDetail?: string
+}
+
+export type SeenMap = Record<string, SeenFixture>
+
+export type ChangeKind = 'moved' | 'postponed'
+
+export interface FixtureChange {
+  fixtureId: string
+  kind: ChangeKind
+  /** Previous kickoff (ISO UTC) for a move. */
+  from?: string
+  /** New kickoff (ISO UTC) for a move. */
+  to?: string
+  detectedAt: string
+}
+
 export type DataSource = 'live' | 'seed' | 'mixed'
