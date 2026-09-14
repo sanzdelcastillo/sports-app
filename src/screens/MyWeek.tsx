@@ -65,11 +65,12 @@ export function MyWeek() {
     liveFeed,
   } = useAppState()
 
-  const { featured, upcomingGroups, recentGroups } = useMemo(() => {
-    const upcoming = week.fixtures.filter((f) => f.status !== 'final')
+  const { liveNow, featured, upcomingGroups, recentGroups } = useMemo(() => {
+    const live = week.fixtures.filter((f) => f.status === 'live')
+    const upcoming = week.fixtures.filter((f) => f.status !== 'final' && f.status !== 'live')
     const recent = week.fixtures.filter((f) => f.status === 'final')
-    const featuredGame =
-      upcoming.find((f) => f.status === 'live') ?? upcoming[0] ?? week.fixtures[0]
+    // Every live game gets the full treatment; the "next up" card is the first game still to come.
+    const featuredGame = upcoming[0] ?? (live.length === 0 ? week.fixtures[0] : undefined)
     const upcomingRest = upcoming.filter((f) => f.id !== featuredGame?.id)
 
     const groupByDay = (fixtures: typeof upcoming) => {
@@ -84,6 +85,7 @@ export function MyWeek() {
     }
 
     return {
+      liveNow: live,
       featured: featuredGame,
       upcomingGroups: groupByDay(upcomingRest),
       recentGroups: groupByDay(recent),
@@ -244,6 +246,17 @@ export function MyWeek() {
             />
           ) : (
             <>
+              {liveNow.length > 0 ? (
+                <section aria-label="Live now">
+                  <div className="date-head live-head">
+                    <span className="pulse-dot" aria-hidden="true" />
+                    Live now · {liveNow.length}
+                  </div>
+                  {liveNow.map((fixture) => (
+                    <FeaturedGame key={fixture.id} fixture={fixture} subscribed={subscribed} />
+                  ))}
+                </section>
+              ) : null}
               {featured ? (
                 <FeaturedGame fixture={featured} subscribed={subscribed} />
               ) : null}

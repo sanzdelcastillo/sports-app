@@ -2158,9 +2158,29 @@ h3 {
 .featured-clock.live-clock .live-clock-text {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 44px;
+  font-size: 26px;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  min-width: 4.4ch;
+}
+
+.featured-clock.live-clock {
+  gap: 5px;
+}
+
+.date-head.live-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--red);
+}
+
+.date-head.live-head .pulse-dot {
+  background: var(--red);
+}
+
+section[aria-label='Live now'] .card-featured {
+  margin-bottom: 10px;
 }
 
 /* ---------- Match panel ---------- */
