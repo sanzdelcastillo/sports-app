@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { getTeam, TEAM_BY_SPORTSDB } from '../data/teams'
 import type { Fixture, Team } from '../domain/types'
 import {
+  fetchHighlight,
   fetchLineup,
   fetchTable,
+  fetchTvListings,
   type LeagueTable,
   type LineupPlayer,
   type MatchLineup,
   type StandingRow,
   type TeamLineup,
 } from '../services/matchExtras'
+import { useAppState } from '../stores/AppState'
 import { TeamCrest } from './TeamCrest'
 
 type Load<T> = { state: 'loading' } | { state: 'ready'; data: T | null } | { state: 'error'; busy: boolean }
@@ -268,5 +271,48 @@ export function LineupsPanel({ fixture }: { fixture: Fixture }) {
         from listed positions, not an official formation.
       </p>
     </section>
+  )
+}
+
+/* ---------- U.S. TV listings ---------- */
+
+export function TvListingsPanel({ fixture }: { fixture: Fixture }) {
+  const [load, retry] = useLoad(fixture, fetchTvListings)
+
+  if (load.state === 'loading') return <p className="disclaimer">Checking broadcast listings…</p>
+  if (load.state === 'error' && load.busy) return <Busy retry={retry} />
+  if (load.state === 'error' || !load.data || load.data.us.length === 0) {
+    return (
+      <p className="disclaimer">
+        No U.S. broadcast listed at the source yet. The destinations above are your best guide.
+      </p>
+    )
+  }
+  return (
+    <ul className="tv-list" aria-label="U.S. TV listings">
+      {load.data.us.map((l) => (
+        <li key={l.channel} className="tv-row">
+          {l.logoUrl ? <img className="tv-logo" src={l.logoUrl} alt="" loading="lazy" width={28} height={28} /> : <span className="tv-logo empty" aria-hidden="true" />}
+          <span className="tv-channel">{l.channel}</span>
+          {l.language === 'es' ? <span className="badge ghost">Español</span> : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/* ---------- Highlights ---------- */
+
+/** Link to the game's official highlights. Renders nothing until the game is over, or while scores are hidden. */
+export function HighlightLink({ fixture }: { fixture: Fixture }) {
+  const { hideScores, isSavedForLater } = useAppState()
+  const masked = hideScores || isSavedForLater(fixture.id)
+  const enabled = fixture.status === 'final' && !masked
+  const [load] = useLoad(fixture, enabled ? fetchHighlight : async () => null)
+  if (!enabled || load.state !== 'ready' || !load.data) return null
+  return (
+    <a className="cta secondary wide highlight-link" href={load.data.url} target="_blank" rel="noreferrer">
+      Watch highlights on YouTube ↗
+    </a>
   )
 }

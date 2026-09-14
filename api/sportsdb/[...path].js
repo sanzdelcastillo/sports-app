@@ -17,7 +17,7 @@ const ALLOW_V1 = new Set([
   'lookuptv.php',
   'lookupevent.php',
 ])
-const ALLOW_V2_PREFIX = ['livescore/', 'lookup/event_tv/', 'schedule/next/team/', 'schedule/previous/team/']
+const ALLOW_V2_PREFIX = ['livescore/', 'lookup/event_tv/', 'lookup/event_highlights/', 'schedule/next/team/', 'schedule/previous/team/']
 
 /** Edge cache per endpoint, in seconds. Live scores stay short; tables can sit for a while. */
 function cacheFor(version, rest) {
@@ -25,6 +25,7 @@ function cacheFor(version, rest) {
   if (rest.startsWith('lookuptable')) return 's-maxage=300, stale-while-revalidate=900'
   if (rest.startsWith('lookuplineup')) return 's-maxage=120, stale-while-revalidate=600'
   if (rest.startsWith('lookuptv')) return 's-maxage=600, stale-while-revalidate=3600'
+  if (rest.startsWith('lookup/event_highlights')) return 's-maxage=3600, stale-while-revalidate=86400'
   return 's-maxage=60, stale-while-revalidate=300'
 }
 

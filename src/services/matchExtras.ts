@@ -1,7 +1,7 @@
 import { LEAGUES } from '../data/leagues'
 import type { Fixture, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { getJson, V1 } from './theSportsDb'
+import { getJson, V1, V2 } from './theSportsDb'
 
 const BASE = V1
 
@@ -180,6 +180,92 @@ export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> 
     .sort((a, b) => a.rank - b.rank)
   if (rows.length === 0) return cached
   const result: LeagueTable = { leagueId: fixture.leagueId, season, rows, fetchedAt: new Date().toISOString() }
+  writeJson(key, result)
+  return result
+}
+
+/* ---------- TV listings ---------- */
+
+export interface TvListing {
+  country: string
+  channel: string
+  /** Local kickoff time as given by the source, e.g. "14:00:00" — informational only. */
+  time?: string
+  logoUrl?: string
+  /** Heuristic from the channel name; the source has no language field. */
+  language: 'en' | 'es' | 'other'
+}
+
+export interface TvListings {
+  us: TvListing[]
+  fetchedAt: string
+}
+
+interface RawTv {
+  strCountry?: string | null
+  strChannel?: string | null
+  strTime?: string | null
+  strLogo?: string | null
+}
+
+const TV_TTL_MS = 60 * 60 * 1000
+const SPANISH = ['telemundo', 'univision', 'tudn', 'vix', 'deportes', 'universo', 'unimás', 'unimas', 'español', 'espanol', 'latino']
+
+export function languageOf(channel: string): TvListing['language'] {
+  const c = channel.toLowerCase()
+  if (SPANISH.some((w) => c.includes(w))) return 'es'
+  return 'en'
+}
+
+export function isUnitedStates(country?: string | null): boolean {
+  const c = (country ?? '').trim().toLowerCase()
+  return c === 'united states' || c === 'usa' || c === 'us' || c === 'united states of america'
+}
+
+export function mapTv(raw: RawTv[]): TvListing[] {
+  return raw
+    .filter((r) => isUnitedStates(r.strCountry) && r.strChannel)
+    .map<TvListing>((r) => ({
+      country: 'United States',
+      channel: (r.strChannel ?? '').trim(),
+      time: r.strTime ?? undefined,
+      logoUrl: r.strLogo ?? undefined,
+      language: languageOf(r.strChannel ?? ''),
+    }))
+    .filter((l, i, all) => all.findIndex((x) => x.channel.toLowerCase() === l.channel.toLowerCase()) === i)
+}
+
+/** U.S. broadcast listings the feed has for this game. Often thin — a supplement to the rights map, not a replacement. */
+export async function fetchTvListings(fixture: Fixture): Promise<TvListings | null> {
+  const key = `sfp.tv.${fixture.id}`
+  const cached = readJson<TvListings | null>(key, null)
+  if (cached && (fixture.status === 'final' || fresh(cached.fetchedAt, TV_TTL_MS))) return cached
+  const data = await getJson<{ tvevent: RawTv[] | null }>(`${BASE}/lookuptv.php?id=${fixture.id}`)
+  const result: TvListings = { us: mapTv(data.tvevent ?? []), fetchedAt: new Date().toISOString() }
+  writeJson(key, result)
+  return result
+}
+
+/* ---------- Highlights ---------- */
+
+export interface Highlight {
+  url: string
+  fetchedAt: string
+}
+
+interface RawHighlight {
+  strVideo?: string | null
+}
+
+/** Official highlight link for a finished game (premium). Null when the feed has none. */
+export async function fetchHighlight(fixture: Fixture): Promise<Highlight | null> {
+  const key = `sfp.highlight.${fixture.id}`
+  const cached = readJson<Highlight | null>(key, null)
+  if (cached) return cached
+  const data = await getJson<{ lookup: RawHighlight[] | null }>(`${V2}/lookup/event_highlights/${fixture.id}`)
+  const url = (data.lookup ?? [])[0]?.strVideo ?? null
+  if (!url || !/^https:\/\/(www\.)?youtu(\.be|be\.com)\//.test(url)) return null
+  const result: Highlight = { url, fetchedAt: new Date().toISOString() }
   writeJson(key, result)
   return result
 }
