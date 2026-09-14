@@ -100,7 +100,7 @@ h3 {
 
 .masthead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 4px 0 10px;
@@ -109,6 +109,9 @@ h3 {
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--display);
   font-weight: 700;
   font-size: 30px;

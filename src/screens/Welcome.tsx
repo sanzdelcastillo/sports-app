@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ClubPicker } from '../components/ClubPicker'
+import { PitchsideMark } from '../components/icons'
 import { PROVIDERS } from '../data/watch'
 import { useAppState } from '../stores/AppState'
 
@@ -22,6 +23,7 @@ export function Welcome() {
     <div className="welcome">
       <header className="masthead">
         <span className="wordmark" aria-label="Pitchside">
+          <PitchsideMark size={30} />
           <span className="wm-watch">Pitch</span>
           <span className="wm-plan">side</span>
         </span>

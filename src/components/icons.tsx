@@ -125,3 +125,15 @@ export function GearIcon(props: IconProps) {
     </svg>
   )
 }
+
+/** The Pitchside mark: corner flag on the corner arc. */
+export function PitchsideMark({ size = 28, ...props }: IconProps & { size?: number }) {
+  return (
+    <svg viewBox="0 0 256 256" width={size} height={size} aria-hidden="true" {...props}>
+      <rect width="256" height="256" rx="58" fill="#0E3C29" />
+      <path d="M60 236 A96 96 0 0 1 156 140" fill="none" stroke="#FBF8F0" strokeWidth="9" strokeLinecap="round" />
+      <path d="M96 236V44" stroke="#FBF8F0" strokeWidth="10" strokeLinecap="round" />
+      <path d="M101 46 L214 82 L101 118 Z" fill="#E5A62E" />
+    </svg>
+  )
+}
