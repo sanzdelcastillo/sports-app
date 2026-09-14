@@ -3,8 +3,8 @@ import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 
 /**
- * Local stand-in for api/sportsdb.js so `npm run dev` and `npm run preview`
- * behave like the deployed site. Reads SPORTSDB_KEY from .env.local (never bundled).
+ * Local stand-in for api/football.js so `npm run dev` and `npm run preview`
+ * behave like the deployed site. Reads APIFOOTBALL_KEY from .env.local (never bundled).
  */
 /** Local stand-in for api/news.js so the News tab works in `npm run dev` / `preview`. */
 function newsDevMiddleware(): Plugin {
@@ -40,27 +40,21 @@ function newsDevMiddleware(): Plugin {
   }
 }
 
-function sportsDbProxy(key: string | undefined): Record<string, ProxyOptions> {
+function footballProxy(key: string | undefined): Record<string, ProxyOptions> {
   return {
-    '/api/sportsdb': {
-      target: 'https://www.thesportsdb.com',
+    '/api/football': {
+      target: 'https://v3.football.api-sports.io',
       changeOrigin: true,
-      headers: key ? { 'X-API-KEY': key } : {},
-      rewrite: (path) => {
-        const m = path.match(/^\/api\/sportsdb\/(v1|v2)\/(.*)$/)
-        if (!m) return path
-        const [, version, rest] = m
-        if (version === 'v2') return `/api/v2/json/${rest}`
-        const [endpoint, qs] = rest.split('?')
-        return `/api/v1/json/${key || '123'}/${endpoint.replace(/\.php$/, '')}.php${qs ? `?${qs}` : ''}`
-      },
+      headers: key ? { 'x-apisports-key': key } : {},
+      rewrite: (path) => path.replace(/^\/api\/football\//, '/'),
     },
   }
 }
 
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const proxy = sportsDbProxy(env.SPORTSDB_KEY)
+  const proxy = footballProxy(env.APIFOOTBALL_KEY)
   return {
     plugins: [react(), newsDevMiddleware()],
     server: { host: '0.0.0.0', port: 5173, proxy },

@@ -159,7 +159,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setLiveFeed('on')
         apply(updates)
       } catch (error) {
-        if (!cancelled && error instanceof Error && error.name === 'NoPremiumKey') setLiveFeed('off')
+        if (!cancelled && error instanceof Error && error.name === 'NoDataKey') setLiveFeed('off')
       }
     }
     void tick()

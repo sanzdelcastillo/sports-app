@@ -3,12 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AppStateProvider } from './stores/AppState'
-import { hydrate } from './lib/storage'
+import { hydrate, migrateProvider } from './lib/storage'
 import { initNative } from './native/init'
 import { isNative } from './native/platform'
 import './styles/global.css'
 
 void hydrate().then(() => {
+  migrateProvider()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <BrowserRouter>

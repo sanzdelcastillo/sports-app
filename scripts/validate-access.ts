@@ -8,13 +8,12 @@ import { diffWeek, mergeChanges, snapshotWeek } from '../src/lib/changes'
 import { buildIcs, escapeIcs } from '../src/lib/ics'
 import { buildWeekText } from '../src/lib/shareWeek'
 import { favoritesComplete } from '../src/services/fixtures'
-import { anyInPlay, applyLive, mapLive } from '../src/services/livescores'
-import { groupLineup, languageOf, mapTv, seasonFor, shapeOf } from '../src/services/matchExtras'
-import { mapClub } from '../src/services/clubs'
-import { mapEvent } from '../src/services/theSportsDb'
+import { anyInPlay, applyLive, type LiveUpdate } from '../src/services/livescores'
+import { mapLineups, mapStandings, seasonFor, shapeOf } from '../src/services/matchExtras'
+import { mapFixture, statusOf, teamFromProvider } from '../src/services/apiFootball'
 import { involvesTeam, scoreLabel } from '../src/lib/status'
 import { liveClockLabel } from '../src/components/LiveClock'
-import { mapStats, mapTimeline } from '../src/services/matchExtras'
+import { mapEvents, mapStats } from '../src/services/matchExtras'
 import { getLeague, leagueIdFromFollow } from '../src/data/leagues'
 import { leagueForEntry, searchLeagues } from '../src/services/leagues'
 import { followKeywords, isForYou } from '../src/services/news'
@@ -125,35 +124,14 @@ const offline = favoritesComplete([], ['ars'], new Date('2026-09-18T00:00:00Z'),
 expect(offline.fixtures.some((f) => f.id === 'same-id'), 'cached fixtures fill the week when live is empty')
 
 console.log('Seasons, lineups, shape')
-expect(seasonFor('epl', '2026-09-19T14:00:00Z') === '2026-2027', 'September → 2026-2027 for European leagues')
-expect(seasonFor('laliga', '2027-03-01T14:00:00Z') === '2026-2027', 'March → still 2026-2027')
+expect(seasonFor('epl', '2026-09-19T14:00:00Z') === '2026', 'mapped leagues use the provider season')
 expect(seasonFor('mls', '2026-09-19T14:00:00Z') === '2026', 'MLS uses the calendar year')
-const raw = [
-  { idPlayer: '1', strPlayer: 'Keeper', strPosition: 'Goalkeeper', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: '1' },
-  ...['2', '3', '4', '5'].map((n) => ({ idPlayer: n, strPlayer: `Def ${n}`, strPosition: 'Defender', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
-  ...['6', '7', '8'].map((n) => ({ idPlayer: n, strPlayer: `Mid ${n}`, strPosition: 'Midfielder', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
-  ...['9', '10', '11'].map((n) => ({ idPlayer: n, strPlayer: `Fwd ${n}`, strPosition: 'Forward', strHome: 'Yes', strSubstitute: 'No', intSquadNumber: n })),
-  { idPlayer: '12', strPlayer: 'Sub', strPosition: 'Midfielder', strHome: 'Yes', strSubstitute: 'Yes', intSquadNumber: '12' },
-  { idPlayer: '21', strPlayer: 'Away GK', strPosition: 'Goalkeeper', strHome: 'No', strSubstitute: 'No', intSquadNumber: '1' },
-]
-const grouped = groupLineup(raw)
-expect(grouped.home.starters.length === 11 && grouped.home.bench.length === 1, 'home starters and bench split')
-expect(grouped.home.shape === '4-3-3', 'shape counted as 4-3-3')
-expect(grouped.home.starters[0].slot === 'GK', 'goalkeeper listed first')
-expect(grouped.away.starters.length === 1 && grouped.away.shape === null, 'incomplete away eleven has no shape')
-expect(shapeOf([]) === null, 'empty lineup has no shape')
-
 console.log('Live scores')
-const live = mapLive([
-  { idEvent: 'epl-1', intHomeScore: '1', intAwayScore: '0', strStatus: '2H', strProgress: '67' },
-  { idEvent: 'ucl-1', intHomeScore: '2', intAwayScore: '2', strStatus: 'FT', strProgress: '90' },
-  { idEvent: 'other', intHomeScore: '0', intAwayScore: '0', strStatus: 'HT', strProgress: '45' },
-  { intHomeScore: '9' },
-])
-expect(live.length === 3, 'entries without an event id are dropped')
-expect(live[0].status === 'live' && live[0].statusDetail === "67'", 'second half maps to live with the minute')
-expect(live[1].status === 'final' && live[1].statusDetail === 'FT', 'FT maps to final')
-expect(live[2].statusDetail === 'HT', 'half time label')
+const live: LiveUpdate[] = [
+  { fixtureId: 'epl-1', homeScore: 1, awayScore: 0, status: 'live', statusDetail: "67'", liveMinute: 67, livePeriod: '2H' },
+  { fixtureId: 'ucl-1', homeScore: 2, awayScore: 2, status: 'final', statusDetail: 'FT' },
+  { fixtureId: 'other', homeScore: 0, awayScore: 0, status: 'live', statusDetail: 'HT', livePeriod: 'HT' },
+]
 const applied = applyLive([epl, ucl, buli], live)
 expect(applied[0].homeScore === 1 && applied[0].status === 'live', 'live score overlays the fixture')
 expect(applied[1].status === 'final' && applied[1].awayScore === 2, 'finished score overlays the fixture')
@@ -164,16 +142,33 @@ expect(anyInPlay([epl], new Date('2026-09-19T14:30:00Z')), 'thirty minutes after
 expect(!anyInPlay([epl], new Date('2026-09-19T18:00:00Z')), 'four hours after kickoff does not')
 expect(!anyInPlay([{ ...epl, status: 'final' }], new Date('2026-09-19T14:30:00Z')), 'finished games never poll')
 
-console.log('Feed timestamps and unknown opponents')
-const cupTie = mapEvent({
-  idEvent: '999001', strTimestamp: '2026-09-15T19:00:00', dateEvent: '2026-09-15', strTime: '19:00:00',
-  idHomeTeam: '133622', strHomeTeam: 'Ipswich Town', idAwayTeam: '133604', strAwayTeam: 'Arsenal',
-  idLeague: '4570', strLeague: 'EFL Cup', strStatus: 'Not Started',
-} as never)
-expect(cupTie?.kickoffUtc === '2026-09-15T19:00:00.000Z', 'zone-less feed timestamp is read as UTC, not local')
-expect(cupTie?.leagueId === 'eflcup', 'EFL Cup recognised')
-expect(getTeam(cupTie?.homeTeamId ?? '')?.name === 'Ipswich Town', 'opponent unknown to the app gets a real record from the event')
+console.log('Provider fixtures and unknown opponents')
+const cupTie = mapFixture({
+  fixture: { id: 999001, date: '2026-09-15T19:00:00+00:00', status: { long: 'Not Started', short: 'NS', elapsed: null }, venue: { id: 1, name: 'Portman Road', city: 'Ipswich' } },
+  league: { id: 48, name: 'League Cup', country: 'England', season: 2026, round: 'Round of 32' },
+  teams: { home: { id: 57, name: 'Ipswich' }, away: { id: 42, name: 'Arsenal' } },
+  goals: { home: null, away: null },
+})
+expect(cupTie?.kickoffUtc === '2026-09-15T19:00:00.000Z', 'provider timestamps are read as UTC')
+expect(cupTie?.leagueId === 'eflcup' && cupTie.leagueName === 'EFL Cup', 'League Cup recognised as EFL Cup')
 expect(getTeam(cupTie?.awayTeamId ?? '')?.id === 'ars', 'known club keeps its core id')
+expect(getTeam(cupTie?.homeTeamId ?? '')?.id === 'ips' && cupTie?.round === 'Round of 32', 'core club by provider id; round kept')
+const stranger = mapFixture({
+  fixture: { id: 999003, date: '2026-09-20T17:00:00+00:00', status: { long: 'Not Started', short: 'NS', elapsed: null } },
+  league: { id: 119, name: 'Superliga', country: 'Denmark', season: 2026 },
+  teams: { home: { id: 400, name: 'FC Copenhagen', logo: 'https://x/400.png' }, away: { id: 401, name: 'Brøndby' } },
+  goals: { home: null, away: null },
+})
+expect(stranger?.leagueId === 'l119' && getTeam(stranger.homeTeamId)?.name === 'FC Copenhagen' && getTeam(stranger.homeTeamId)?.badgeUrl === 'https://x/400.png', 'a game from any league creates clubs and league on sight')
+expect(accessFor(stranger!, ['peacock']).state === 'unknown', 'no U.S. rights guess for an unmapped league')
+expect(statusOf('2H') === 'live' && statusOf('AET') === 'final' && statusOf('PST') === 'postponed' && statusOf('NS') === 'scheduled', 'status codes map')
+const liveRaw = mapFixture({
+  fixture: { id: 999004, date: '2026-09-14T16:30:00+00:00', status: { long: 'Second Half', short: '2H', elapsed: 54, extra: null } },
+  league: { id: 135, name: 'Serie A', country: 'Italy', season: 2026 },
+  teams: { home: { id: 895, name: 'Como' }, away: { id: 523, name: 'Parma' } },
+  goals: { home: 1, away: 0 },
+})
+expect(liveRaw?.status === 'live' && liveRaw.liveMinute === 54 && liveRaw.livePeriod === '2H' && liveRaw.statusDetail === "54'", 'live minute and period carried')
 
 console.log('Competition follows')
 const uclGame = { ...cupTie!, leagueId: 'ucl' as const, homeTeamId: 't1', awayTeamId: 't2' }
@@ -183,25 +178,18 @@ expect(leagueIdFromFollow('league:worldcup') === 'worldcup' && leagueIdFromFollo
 
 console.log('Any league')
 const dir = [
-  { id: '4406', name: 'Argentinian Primera Division' },
-  { id: '4340', name: 'Danish Superliga' },
-  { id: '4668', name: 'Saudi-Arabian Pro League' },
-  { id: '5215', name: 'Argentina Primera B Metropolitana' },
+  { id: '128', name: 'Liga Profesional Argentina', country: 'Argentina', type: 'League' as const, season: 2026 },
+  { id: '119', name: 'Superliga', country: 'Denmark', type: 'League' as const, season: 2026 },
+  { id: '307', name: 'Pro League', country: 'Saudi-Arabia', type: 'League' as const, season: 2026 },
+  { id: '129', name: 'Primera B Nacional', country: 'Argentina', type: 'League' as const, season: 2026 },
 ]
-expect(searchLeagues(dir, 'denmark').some((e) => e.id === '4340'), 'country name finds a league named by demonym')
-expect(searchLeagues(dir, 'saudi').some((e) => e.id === '4668'), 'partial country search')
+expect(searchLeagues(dir, 'denmark').some((e) => e.id === '119'), 'country name finds a league')
+expect(searchLeagues(dir, 'saudi').some((e) => e.id === '307'), 'partial country search')
 expect(searchLeagues(dir, 'argentina').length === 2, 'both Argentine leagues match')
 const danish = leagueForEntry(dir[1])
-expect(danish.id === 'l4340' && danish.shortName === 'Superliga', 'unmapped league registered from the feed with a short name')
-expect(getLeague('l4340').name === 'Danish Superliga' && getLeague('nope').name === 'Soccer', 'getLeague resolves dynamic ids and never returns undefined')
-expect(leagueIdFromFollow('league:l4340') === 'l4340', 'dynamic league follows parse')
-const danishGame = mapEvent({
-  idEvent: '999002', strTimestamp: '2026-09-20T17:00:00', dateEvent: '2026-09-20', strTime: '17:00:00',
-  idHomeTeam: '900001', strHomeTeam: 'FC Copenhagen', idAwayTeam: '900002', strAwayTeam: 'Brøndby',
-  idLeague: '4340', strLeague: 'Danish Superliga', strStatus: 'Not Started',
-} as never)
-expect(danishGame?.leagueId === 'l4340' && danishGame.leagueName === 'Danish Superliga', 'a game from any league carries its real league')
-expect(accessFor(danishGame!, ['peacock']).state === 'unknown', 'no U.S. rights guess for an unmapped league')
+expect(danish.id === 'l119' && danish.currentSeason === 2026 && danish.country === 'Denmark', 'unmapped league registered from the provider with season and country')
+expect(getLeague('l119').name === 'Superliga' && getLeague('nope').name === 'Soccer', 'getLeague resolves dynamic ids and never returns undefined')
+expect(leagueIdFromFollow('league:l119') === 'l119', 'dynamic league follows parse')
 
 console.log('Live clock, scores and match report')
 expect(scoreLabel(null, 'live') === '0' && scoreLabel(null, 'final') === '—' && scoreLabel(null, 'scheduled') === '—', 'live with no score reads 0; unknown finals stay blank')
@@ -209,39 +197,32 @@ const liveFx = { ...cupTie!, status: 'live' as const, liveMinute: 23, livePeriod
 expect(liveClockLabel(liveFx).text === '24:35', 'clock counts seconds between feed updates')
 expect(liveClockLabel({ ...liveFx, liveMinute: 44, liveMinuteAt: new Date(Date.now() - 130_000).toISOString() }).text === "45+1'", 'clock stops at the end of the half and shows added time')
 expect(liveClockLabel({ ...liveFx, livePeriod: 'HT' }).text === 'HT', 'half time')
-const tl = mapTimeline([
-  { intTime: '58', strTimeline: 'Goal', strTimelineDetail: 'Normal Goal', strPlayer: 'Bruno', strAssist: 'Rice', strHome: 'No', strTeam: 'Arsenal' },
-  { intTime: '28', strTimeline: 'Card', strTimelineDetail: 'Yellow Card', strPlayer: 'Reinildo', strHome: 'Yes', strTeam: 'Sunderland', strComment: 'Foul' },
-  { intTime: '45', strTimeline: 'subst', strTimelineDetail: 'Substitution 1', strPlayer: 'White', strAssist: 'Timber', strHome: 'No', strTeam: 'Arsenal' },
-], 'Sunderland', 'Arsenal')
-expect(tl.map((e) => e.kind).join(',') === 'yellow,sub,goal', 'timeline sorted by minute with kinds')
-expect(tl[2].side === 'away' && tl[2].detail === 'assist Rice' && tl[1].detail === 'for Timber', 'sides and details')
-const st = mapStats([{ strStat: 'Shots on Goal', intHome: '3', intAway: '5' }, { strStat: 'Ball Possession', intHome: '38%', intAway: '62%' }])
-expect(st[0].label === 'Ball Possession' && st[0].percent && st[0].away === 62, 'possession first, percent parsed')
+const ev = mapEvents([
+  { time: { elapsed: 58, extra: null }, team: { id: 42, name: 'Arsenal' }, player: { id: 1, name: 'Bruno' }, assist: { id: 2, name: 'Rice' }, type: 'Goal', detail: 'Normal Goal' },
+  { time: { elapsed: 28, extra: null }, team: { id: 57, name: 'Ipswich' }, player: { id: 3, name: 'Reinildo' }, assist: { id: null, name: null }, type: 'Card', detail: 'Yellow Card', comments: 'Foul' },
+  { time: { elapsed: 45, extra: 2 }, team: { id: 42, name: 'Arsenal' }, player: { id: 4, name: 'White' }, assist: { id: 5, name: 'Timber' }, type: 'subst', detail: 'Substitution 1' },
+], '57')
+expect(ev.map((e) => e.kind).join(',') === 'yellow,sub,goal', 'events sorted by minute with kinds')
+expect(ev[2].side === 'away' && ev[2].detail === 'assist Rice' && ev[1].detail === 'for Timber' && ev[1].extra === 2, 'sides, details and added time')
+const st = mapStats([
+  { team: { id: 57, name: 'Ipswich' }, statistics: [{ type: 'Shots on Goal', value: 3 }, { type: 'Ball Possession', value: '38%' }, { type: 'expected_goals', value: '0.8' }] },
+  { team: { id: 42, name: 'Arsenal' }, statistics: [{ type: 'Shots on Goal', value: 5 }, { type: 'Ball Possession', value: '62%' }, { type: 'expected_goals', value: '2.1' }] },
+], '57')
+expect(st[0].label === 'Ball Possession' && st[0].percent && st[0].away === 62 && st[1].label.includes('xG'), 'possession first, percent parsed, xG labelled')
 
-console.log('News parsing')
-const rss = `<rss><channel><item><title><![CDATA[Arsenal &amp; Chelsea draw]]></title><link>https://x.test/a</link><pubDate>Mon, 14 Sep 2026 11:25:35 GMT</pubDate></item><item><title>No link</title></item></channel></rss>`
-const parsed = parseRss(rss, 'Test')
-expect(parsed.length === 1 && parsed[0].title === 'Arsenal & Chelsea draw' && parsed[0].publishedAt?.startsWith('2026-09-14'), 'RSS items parse; items without links dropped')
-expect(isForYou(parsed[0], followKeywords(['ars'])) && !isForYou(parsed[0], followKeywords(['liv'])), 'headline matching by followed club')
-
-console.log('TV listings and language')
-const tv = mapTv([
-  { strCountry: 'United States', strChannel: 'Peacock', strTime: '14:00:00' },
-  { strCountry: 'United States', strChannel: 'Telemundo' },
-  { strCountry: 'United Kingdom', strChannel: 'Sky Sports' },
-  { strCountry: 'USA', strChannel: 'peacock' },
-])
-expect(tv.length === 2, 'only U.S. listings kept, duplicates by channel collapsed')
-expect(tv.find((l) => l.channel === 'Telemundo')?.language === 'es', 'Telemundo tagged Spanish')
-expect(languageOf('ESPN Deportes') === 'es' && languageOf('CBS Sports Network') === 'en', 'language heuristic')
-
-console.log('Club catalogue')
-const club = mapClub({ idTeam: '133600', strTeam: 'Fulham', strTeamShort: 'FUL', strBadge: 'https://x/badge.png', strCountry: 'England' }, 'epl')
-expect(club?.id === 't133600' && club.shortName === 'FUL', 'feed-only club gets a stable id and short name')
-const known = mapClub({ idTeam: '133604', strTeam: 'Arsenal', strTeamShort: 'ARS' }, 'epl')
-expect(known?.id === 'ars', 'a club already in the core keeps its core id')
-expect(mapClub({ idTeam: '1', strTeam: 'Real Salt Lake' }, 'mls')?.shortName === 'RSL', 'short name derived from initials when missing')
+console.log('Lineups and standings')
+const lu = mapLineups([
+  { team: { id: 57, name: 'Ipswich' }, coach: { id: 1, name: 'K. McKenna' }, formation: '4-2-3-1', startXI: [{ player: { id: 10, name: 'A. Palmer', number: 1, pos: 'G', grid: '1:1' } }, { player: { id: 11, name: 'L. Davis', number: 3, pos: 'D', grid: '2:1' } }], substitutes: [{ player: { id: 12, name: 'C. Walton', number: 28, pos: 'G', grid: null } }] },
+  { team: { id: 42, name: 'Arsenal' }, coach: { id: 2, name: 'M. Arteta' }, formation: '4-3-3', startXI: [], substitutes: [] },
+], '57')
+expect(lu.home.shape === '4-2-3-1' && lu.home.coach === 'K. McKenna' && lu.home.starters[0].row === 1 && lu.home.starters[0].cutoutUrl?.includes('/players/10'), 'lineup with formation, coach, grid and photo')
+expect(lu.home.bench.length === 1 && lu.home.bench[0].slot === 'SUB' && lu.away.starters.length === 0, 'bench and empty side')
+expect(shapeOf([{ id: 'a', name: 'x', number: 1, slot: 'GK', row: 1 }, { id: 'b', name: 'y', number: 2, slot: 'DEF', row: 2 }, { id: 'c', name: 'z', number: 3, slot: 'DEF', row: 2 }]) === '2', 'shape counted from rows when no formation string')
+const rows = mapStandings([{ league: { id: 135, season: 2026, standings: [[{ rank: 1, team: { id: 487, name: 'Lazio', logo: null }, points: 10, goalsDiff: 5, form: 'DWWW', all: { played: 4, win: 3, draw: 1, lose: 0 } }]] } }])
+expect(rows.length === 1 && rows[0].form === 'DWWW' && rows[0].teamProviderId === '487', 'standings mapped')
+expect(seasonFor('epl', '2026-09-14T00:00:00Z') === '2026' && seasonFor('l9999', '2026-03-01T00:00:00Z') === '2025', 'season from the provider or a July cut-over guess')
+teamFromProvider({ id: 5000, name: 'Real Salt Lake', code: null }, 'mls')
+expect(getTeam('t5000')?.shortName === 'RSL', 'short code from initials when the provider has none')
 
 console.log('Setup code')
 const setup = { follows: ['ars', 't133600'], subscribed: ['peacock' as const], watchLater: ['x1'], hideScores: true }

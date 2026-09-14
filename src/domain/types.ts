@@ -1,6 +1,6 @@
 export type WatchAvailability = 'live' | 'replay' | 'upcoming' | 'unknown'
 
-export type FixtureStatus = 'scheduled' | 'live' | 'final' | 'unknown'
+export type FixtureStatus = 'scheduled' | 'live' | 'final' | 'postponed' | 'unknown'
 
 /** Known league ids, plus any league the feed knows about (`l<idLeague>`). */
 export type KnownLeagueId =
@@ -86,7 +86,7 @@ export interface Team {
   badgeUrl: string
   espnLogoUrl?: string
   espnId?: string
-  sportsDbId: string
+  providerId: string
   color: string
   colorSecondary: string
   seedFollow?: boolean
@@ -98,7 +98,10 @@ export interface League {
   name: string
   shortName: string
   accent: string
-  sportsDbId?: string
+  providerId?: string
+  /** Season year the provider is currently serving for this league. */
+  currentSeason?: number
+  country?: string
 }
 
 export interface WatchDestination {
@@ -130,8 +133,10 @@ export interface Fixture {
   liveMinuteAt?: string
   livePeriod?: string
   mustWatch?: boolean
-  /** Season label from the data source, e.g. "2026-2027" or "2026". */
+  /** Season label from the data source, e.g. "2026". */
   season?: string
+  /** Round or stage label from the source, e.g. "Regular Season - 5" or "Round of 32". */
+  round?: string
 }
 
 /** Compact record of a fixture as last seen, used to spot schedule changes between visits. */

@@ -45,3 +45,22 @@ export async function hydrate(): Promise<void> {
     /* best effort */
   }
 }
+
+const PROVIDER_FLAG = 'sfp.provider.v2'
+
+/**
+ * One-time reset when the data provider changed (ids are not compatible). Keeps the user's apps and
+ * viewing preferences; clears follows and every cache so the welcome flow runs again cleanly.
+ */
+export function migrateProvider(): void {
+  try {
+    if (localStorage.getItem(PROVIDER_FLAG)) return
+    const keep = new Set(['sfp.subscriptions.v1', 'sfp.hideScores.v1', 'sfp.showCrests.v1', 'sfp.kickoffAlerts.v1', 'sfp.news.v1'])
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(PREFIX) && !keep.has(key)) localStorage.removeItem(key)
+    }
+    localStorage.setItem(PROVIDER_FLAG, '1')
+  } catch {
+    /* ignore */
+  }
+}

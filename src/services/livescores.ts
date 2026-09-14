@@ -1,15 +1,6 @@
 import type { Fixture } from '../domain/types'
 import { parseUtc } from '../lib/time'
-import { getJson, V2 } from './theSportsDb'
-
-interface RawLive {
-  idEvent?: string
-  intHomeScore?: string | null
-  intAwayScore?: string | null
-  strStatus?: string | null
-  strProgress?: string | null
-  updated?: string | null
-}
+import { fetchLiveFixtures } from './apiFootball'
 
 export interface LiveUpdate {
   fixtureId: string
@@ -22,49 +13,19 @@ export interface LiveUpdate {
   updatedAt?: string
 }
 
-const FINAL = new Set(['FT', 'AET', 'PEN', 'FINISHED', 'MATCH FINISHED'])
-const NOT_STARTED = new Set(['NS', 'TBD', 'NOT STARTED'])
-
-function num(value?: string | null): number | null {
-  if (value === undefined || value === null || value === '') return null
-  const n = Number(value)
-  return Number.isFinite(n) ? n : null
-}
-
-/** Human label for the scoreboard: "45'", "HT", "90+3'", "FT". */
-function detailFor(status: string, progress: string): string {
-  const s = status.toUpperCase()
-  if (s === 'HT') return 'HT'
-  if (FINAL.has(s)) return 'FT'
-  if (progress && /^\d+/.test(progress)) return `${progress}'`
-  return status || 'Live'
-}
-
-export function mapLive(raw: RawLive[]): LiveUpdate[] {
-  return raw
-    .filter((r): r is RawLive & { idEvent: string } => Boolean(r.idEvent))
-    .map((r) => {
-      const status = (r.strStatus ?? '').trim()
-      const s = status.toUpperCase()
-      const progress = (r.strProgress ?? '').trim()
-      const minute = /^\d+/.test(progress) ? Number(progress.match(/^\d+/)![0]) : undefined
-      return {
-        fixtureId: r.idEvent,
-        homeScore: num(r.intHomeScore),
-        awayScore: num(r.intAwayScore),
-        status: FINAL.has(s) ? 'final' : NOT_STARTED.has(s) ? 'scheduled' : 'live',
-        statusDetail: detailFor(status, progress),
-        liveMinute: minute,
-        livePeriod: s || undefined,
-        updatedAt: r.updated ?? undefined,
-      }
-    })
-}
-
-/** Current soccer livescores (premium). Throws NoPremiumKey when the proxy has no key. */
+/** Every game in play right now, as updates keyed by fixture id. Throws NoDataKey when the proxy has no key. */
 export async function fetchLiveSoccer(): Promise<LiveUpdate[]> {
-  const data = await getJson<{ livescore: RawLive[] | null }>(`${V2}/livescore/soccer`)
-  return mapLive(data.livescore ?? [])
+  const live = await fetchLiveFixtures()
+  return live.map((f) => ({
+    fixtureId: f.id,
+    homeScore: f.homeScore,
+    awayScore: f.awayScore,
+    status: f.status,
+    statusDetail: f.statusDetail ?? 'Live',
+    liveMinute: f.liveMinute,
+    livePeriod: f.livePeriod,
+    updatedAt: f.liveMinuteAt,
+  }))
 }
 
 /** Overlay live updates onto the week. Only fixtures the feed mentions change. */

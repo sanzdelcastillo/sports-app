@@ -1,14 +1,17 @@
-import { allLeagues, dynamicLeagueId, getLeague, isDynamicLeagueId, leagueFromFeed, registerLeagues, shortLeagueName } from '../data/leagues'
+import { allLeagues, dynamicLeagueId, getLeague, isDynamicLeagueId, leagueFromProvider, registerLeagues, shortLeagueName } from '../data/leagues'
 import type { League, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { getJson, V2 } from './theSportsDb'
+import { fetchLeagueDirectory } from './apiFootball'
 
-const DIRECTORY_KEY = 'sfp.leagueDirectory.v1'
+const DIRECTORY_KEY = 'sfp.leagueDirectory.v2'
 const DIRECTORY_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 interface DirectoryEntry {
-  id: string // feed id
+  id: string // provider id
   name: string
+  country?: string
+  type?: 'League' | 'Cup'
+  season?: number | null
   alt?: string
 }
 
@@ -37,31 +40,25 @@ const DEMONYMS: Record<string, string> = {
   singaporean: 'singapore', 'new zealand': 'new zealand', algerian: 'algeria', tunisian: 'tunisia', ghanaian: 'ghana',
 }
 
-/** Feed ids of leagues worth surfacing before anyone types. */
-export const POPULAR_LEAGUE_FEED_IDS = [
-  '4350', '4351', '4406', '4668', '4330', '4339', '4329', '4338', '4344', '4337', '4340', '4429',
-  '4347', '4394', '4400', '4401', '4403', '4407', '4359', '4355', '4356', '4346', '4357', '4396',
-]
+/** Provider ids of leagues worth surfacing before anyone types (Liga MX, Brasileirão, Argentina, Saudi, SPFL, Süper Lig, Championship, Belgium, Denmark, Sweden, Norway, Switzerland, Austria, Greece, J1, K League, A-League, Colombia, Chile, Uruguay, USL, Liga MX Femenil, NWSL, Serie B). */
+export const POPULAR_LEAGUE_FEED_IDS = ['262', '71', '128', '307', '179', '203', '40', '144', '119', '113', '103', '207', '218', '197', '98', '292', '188', '239', '265', '268', '253', '255', '254', '136']
 
 function searchText(entry: DirectoryEntry): string {
-  const base = `${entry.name} ${entry.alt ?? ''}`.toLowerCase()
+  const base = `${entry.name} ${entry.country ?? ''} ${entry.alt ?? ''}`.toLowerCase()
   const extras = Object.entries(DEMONYMS)
     .filter(([demonym]) => base.includes(demonym))
     .map(([, country]) => country)
   return `${base} ${extras.join(' ')}`
 }
 
-/** Every soccer league the feed knows (~700), from the device cache when fresh. */
+/** Every league the provider knows (~1,200, with country and current season), from the device cache when fresh. */
 export async function loadLeagueDirectory(): Promise<DirectoryEntry[]> {
   const cached = readJson<Directory | null>(DIRECTORY_KEY, null)
   if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < DIRECTORY_TTL_MS) return cached.leagues
   try {
-    const data = await getJson<{ all: { idLeague: string; strLeague: string; strSport: string; strLeagueAlternate?: string | null }[] | null }>(
-      `${V2}/all/leagues`,
-    )
-    const leagues = (data.all ?? [])
-      .filter((l) => l.strSport === 'Soccer' && l.idLeague && l.strLeague)
-      .map<DirectoryEntry>((l) => ({ id: l.idLeague, name: l.strLeague, alt: l.strLeagueAlternate || undefined }))
+    const leagues = (await fetchLeagueDirectory())
+      .filter((l) => !/\b(W|Women|U1\d|U2\d|Reserve|Youth)\b/i.test(l.name) || /NWSL|Femenil|WSL|Liga F/.test(l.name))
+      .map<DirectoryEntry>((l) => ({ id: l.id, name: l.name, country: l.country, type: l.type, season: l.season }))
     if (leagues.length === 0) return cached?.leagues ?? []
     writeJson<Directory>(DIRECTORY_KEY, { leagues, fetchedAt: new Date().toISOString() })
     return leagues
@@ -93,9 +90,9 @@ export function popularLeagues(directory: DirectoryEntry[]): DirectoryEntry[] {
   return POPULAR_LEAGUE_FEED_IDS.map((id) => byId.get(id)).filter((e): e is DirectoryEntry => Boolean(e))
 }
 
-/** The app-side league for a directory entry — a known one when we map it by hand, otherwise registered from the feed. */
+/** The app-side league for a directory entry — a known one when we map it by hand, otherwise registered from the provider. */
 export function leagueForEntry(entry: DirectoryEntry): League {
-  return leagueFromFeed(entry.id, entry.name)
+  return leagueFromProvider(entry.id, entry.name, entry.country, entry.season ?? undefined)
 }
 
 export { allLeagues, dynamicLeagueId, getLeague, isDynamicLeagueId, registerLeagues, shortLeagueName }

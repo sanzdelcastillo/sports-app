@@ -15,7 +15,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/m4it3e1602103647.png',
     espnLogoUrl: espnCrest('20232'),
     espnId: '20232',
-    sportsDbId: '137699',
+    providerId: '9568',
     color: '#F7B5CD',
     colorSecondary: '#231F20',
     followable: true,
@@ -30,7 +30,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/ysyysr1420227188.png',
     espnLogoUrl: espnCrest('187'),
     espnId: '187',
-    sportsDbId: '134153',
+    providerId: '1605',
     color: '#00245D',
     colorSecondary: '#FFD200',
     followable: true,
@@ -45,7 +45,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/vwvwrw1473502969.png',
     espnLogoUrl: espnCrest('86'),
     espnId: '86',
-    sportsDbId: '133738',
+    providerId: '541',
     color: '#FFFFFF',
     colorSecondary: '#00529F',
     followable: true,
@@ -60,7 +60,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/0ulh3q1719984315.png',
     espnLogoUrl: espnCrest('1068'),
     espnId: '1068',
-    sportsDbId: '133729',
+    providerId: '530',
     color: '#CB3524',
     colorSecondary: '#272E61',
     followable: true,
@@ -75,7 +75,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/wq9sir1639406443.png',
     espnLogoUrl: espnCrest('83'),
     espnId: '83',
-    sportsDbId: '133739',
+    providerId: '529',
     color: '#004D98',
     colorSecondary: '#A50044',
     followable: true,
@@ -90,7 +90,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/vwpvry1467462651.png',
     espnLogoUrl: espnCrest('382'),
     espnId: '382',
-    sportsDbId: '133613',
+    providerId: '50',
     color: '#6CABDD',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -105,7 +105,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/xzqdr11517660252.png',
     espnLogoUrl: espnCrest('360'),
     espnId: '360',
-    sportsDbId: '133612',
+    providerId: '33',
     color: '#DA291C',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -120,7 +120,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/kfaher1737969724.png',
     espnLogoUrl: espnCrest('364'),
     espnId: '364',
-    sportsDbId: '133602',
+    providerId: '40',
     color: '#C8102E',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -135,7 +135,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png',
     espnLogoUrl: espnCrest('359'),
     espnId: '359',
-    sportsDbId: '133604',
+    providerId: '42',
     color: '#EF0107',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -150,7 +150,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/rwqrrq1473504808.png',
     espnLogoUrl: espnCrest('160'),
     espnId: '160',
-    sportsDbId: '133714',
+    providerId: '85',
     color: '#004170',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -165,7 +165,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/ryhu6d1617113103.png',
     espnLogoUrl: espnCrest('110'),
     espnId: '110',
-    sportsDbId: '133681',
+    providerId: '505',
     color: '#010E80',
     colorSecondary: '#000000',
     followable: true,
@@ -180,7 +180,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/pbf4ul1782638263.png',
     espnLogoUrl: espnCrest('363'),
     espnId: '363',
-    sportsDbId: '133610',
+    providerId: '49',
     color: '#034694',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -195,7 +195,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/44untz1518467380.png',
     espnLogoUrl: espnCrest('367'),
     espnId: '367',
-    sportsDbId: '133616',
+    providerId: '47',
     color: '#132257',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -210,7 +210,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/01ogkh1716960412.png',
     espnLogoUrl: espnCrest('132'),
     espnId: '132',
-    sportsDbId: '133664',
+    providerId: '157',
     color: '#DC052D',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -225,7 +225,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/tqo8ge1716960353.png',
     espnLogoUrl: espnCrest('124'),
     espnId: '124',
-    sportsDbId: '133650',
+    providerId: '165',
     color: '#FDE100',
     colorSecondary: '#000000',
     followable: true,
@@ -240,7 +240,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/uxf0gr1742983727.png',
     espnLogoUrl: espnCrest('111'),
     espnId: '111',
-    sportsDbId: '133676',
+    providerId: '496',
     color: '#000000',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -255,7 +255,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/wvspur1448806617.png',
     espnLogoUrl: espnCrest('103'),
     espnId: '103',
-    sportsDbId: '133667',
+    providerId: '489',
     color: '#FB090B',
     colorSecondary: '#000000',
     followable: true,
@@ -270,7 +270,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/m9vis71735140655.png',
     espnLogoUrl: espnCrest('17606'),
     espnId: '17606',
-    sportsDbId: '134630',
+    providerId: '1604',
     color: '#6CACE4',
     colorSecondary: '#F15524',
     followable: true,
@@ -285,7 +285,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/2dy5cx1706711036.png',
     espnLogoUrl: espnCrest('9726'),
     espnId: '9726',
-    sportsDbId: '134149',
+    providerId: '1595',
     color: '#5D9741',
     colorSecondary: '#005595',
     followable: true,
@@ -300,7 +300,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/8xuc781639493166.png',
     espnLogoUrl: espnCrest('182'),
     espnId: '182',
-    sportsDbId: '134154',
+    providerId: '1607',
     color: '#7CCDEF',
     colorSecondary: '#FF0000',
     followable: true,
@@ -315,7 +315,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/ej091x1602103070.png',
     espnLogoUrl: espnCrest('18418'),
     espnId: '18418',
-    sportsDbId: '135851',
+    providerId: '1608',
     color: '#80000A',
     colorSecondary: '#A19060',
     followable: true,
@@ -328,7 +328,7 @@ export const TEAMS: Team[] = [
     country: 'Canada',
     stadium: 'BC Place',
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/tpwxpy1473536521.png',
-    sportsDbId: '134147',
+    providerId: '1603',
     color: '#00245E',
     colorSecondary: '#9DC2EA',
     followable: true,
@@ -343,7 +343,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/1ula2l1639493143.png',
     espnLogoUrl: espnCrest('189'),
     espnId: '189',
-    sportsDbId: '134159',
+    providerId: '1609',
     color: '#CE0E2D',
     colorSecondary: '#0A2240',
     followable: true,
@@ -358,7 +358,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/l8qyxv1742982541.png',
     espnLogoUrl: espnCrest('114'),
     espnId: '114',
-    sportsDbId: '133670',
+    providerId: '492',
     color: '#12A0D7',
     colorSecondary: '#003C82',
     followable: true,
@@ -371,7 +371,7 @@ export const TEAMS: Team[] = [
     country: 'Netherlands',
     stadium: 'De Kuip',
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/uturtx1473534803.png',
-    sportsDbId: '133758',
+    providerId: '209',
     color: '#E2001A',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -384,7 +384,7 @@ export const TEAMS: Team[] = [
     country: 'Portugal',
     stadium: 'Estádio do Dragão',
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/xu47rb1628855600.png',
-    sportsDbId: '134114',
+    providerId: '212',
     color: '#00428C',
     colorSecondary: '#FFFFFF',
     followable: true,
@@ -399,7 +399,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/exjf5l1678808044.png',
     espnLogoUrl: espnCrest('174'),
     espnId: '174',
-    sportsDbId: '133823',
+    providerId: '91',
     color: '#E51B22',
     colorSecondary: '#CB9F18',
     followable: true,
@@ -414,7 +414,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/vrypqy1473503073.png',
     espnLogoUrl: espnCrest('102'),
     espnId: '102',
-    sportsDbId: '133740',
+    providerId: '533',
     color: '#FFE667',
     colorSecondary: '#005187',
     followable: true,
@@ -429,7 +429,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/nzhu941655595465.png',
     espnLogoUrl: espnCrest('101'),
     espnId: '101',
-    sportsDbId: '133728',
+    providerId: '728',
     color: '#E53027',
     colorSecondary: '#FFFFFF',
     followable: false,
@@ -444,7 +444,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/uxyqys1424033798.png',
     espnLogoUrl: espnCrest('388'),
     espnId: '388',
-    sportsDbId: '133625',
+    providerId: '1346',
     color: '#77BBFF',
     colorSecondary: '#FFFFFF',
     followable: false,
@@ -459,7 +459,7 @@ export const TEAMS: Team[] = [
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/mdj1ey1634670785.png',
     espnLogoUrl: espnCrest('373'),
     espnId: '373',
-    sportsDbId: '133622',
+    providerId: '57',
     color: '#3A64A3',
     colorSecondary: '#DE2C37',
     followable: false,
@@ -472,7 +472,7 @@ export const TEAMS: Team[] = [
     country: 'Azerbaijan',
     stadium: 'Bank Respublika Arena',
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/placeholder.png',
-    sportsDbId: '138108',
+    providerId: '13976',
     color: '#1B4B8A',
     colorSecondary: '#FFFFFF',
     followable: false,
@@ -485,7 +485,7 @@ export const TEAMS: Team[] = [
     country: 'Slovakia',
     stadium: 'Tehelné pole',
     badgeUrl: 'https://r2.thesportsdb.com/images/media/team/badge/placeholder.png',
-    sportsDbId: '134777',
+    providerId: '656',
     color: '#A0112B',
     colorSecondary: '#FFFFFF',
     followable: false,
@@ -497,7 +497,7 @@ export const TEAMS: Team[] = [
  * clubs fetched from the feed are registered at runtime so any club in a supported league can be followed.
  */
 const byId = new Map<string, Team>()
-const bySportsDb = new Map<string, Team>()
+const byProviderId = new Map<string, Team>()
 const byName = new Map<string, Team>()
 let version = 0
 
@@ -533,14 +533,14 @@ function compact(t: Team): Partial<Team> {
 export function registerTeams(teams: Team[]): void {
   let changed = false
   for (const t of teams) {
-    const existing = bySportsDb.get(t.sportsDbId)
+    const existing = byProviderId.get(t.providerId)
     let merged: Team
     if (!existing) merged = t
     else if (!isFeedId(existing.id)) merged = { ...t, ...existing, followable: true }
     else merged = { ...existing, ...compact(t), id: existing.id }
     if (existing && JSON.stringify(existing) === JSON.stringify(merged)) continue
     byId.set(merged.id, merged)
-    bySportsDb.set(merged.sportsDbId, merged)
+    byProviderId.set(merged.providerId, merged)
     for (const k of aliasesFor(merged)) byName.set(k, merged)
     changed = true
   }
@@ -570,7 +570,7 @@ export function restoreRegistry(): void {
   try {
     const raw = localStorage.getItem(REGISTRY_KEY)
     const teams = raw ? (JSON.parse(raw) as Team[]) : []
-    if (Array.isArray(teams)) registerTeams(teams.filter((t) => t && typeof t.id === 'string' && t.sportsDbId))
+    if (Array.isArray(teams)) registerTeams(teams.filter((t) => t && typeof t.id === 'string' && t.providerId))
   } catch {
     /* ignore */
   } finally {
@@ -589,8 +589,8 @@ export function getTeam(id: string): Team | undefined {
   return byId.get(id)
 }
 
-export function teamBySportsDb(sportsDbId: string): Team | undefined {
-  return bySportsDb.get(sportsDbId)
+export function teamByProviderId(providerId: string): Team | undefined {
+  return byProviderId.get(providerId)
 }
 
 export function resolveTeam(name: string): Team | undefined {
@@ -606,6 +606,6 @@ export function followableTeams(): Team[] {
 }
 
 /** Stable id for a club that only exists in the feed. */
-export function dynamicTeamId(sportsDbId: string): string {
-  return `t${sportsDbId}`
+export function dynamicTeamId(providerId: string): string {
+  return `t${providerId}`
 }

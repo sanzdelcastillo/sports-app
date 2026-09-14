@@ -152,8 +152,8 @@ export function Settings() {
           with where to watch in the U.S.
         </p>
         <p>
-          Everything you set up stays on this phone. There is no account and nothing is sent to us. Fixture, lineup,
-          table and broadcast data come from TheSportsDB. Where-to-watch guidance is maintained by hand and can
+          Everything you set up stays on this phone. There is no account and nothing is sent to us. Fixtures, live scores, lineups, events,
+          statistics and tables come from API-Football. Where-to-watch guidance is maintained by hand and can
           lag rights changes — confirm on the provider before kickoff.
         </p>
         <p>

@@ -9,7 +9,7 @@ Everything below runs on your Mac mini. Do it once; after that, shipping a new v
 3. **CocoaPods** — in Terminal: `sudo gem install cocoapods` (asks for your Mac password).
 4. **Node** — if `node -v` in Terminal doesn't print a version, install from nodejs.org (LTS).
 5. **The project** — `git clone https://github.com/sanzdelcastillo/sports-app.git` then `cd sports-app` then `npm install`.
-6. **Your data key** — copy `.env.example` to `.env.local` and paste your TheSportsDB key.
+6. **Your data key** — copy `.env.example` to `.env.local` and paste your API-Football key.
 7. **Tell the app where the server is** — in `.env.local` add a second line:
    `VITE_API_BASE=https://YOUR-VERCEL-URL` (the address Vercel gave you, no trailing slash).
    The phone app can't use relative URLs, so it needs the real address of the proxy.

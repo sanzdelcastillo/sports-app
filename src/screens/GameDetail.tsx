@@ -4,7 +4,7 @@ import { AppHeader } from '../components/AppHeader'
 import { EmptyState } from '../components/EmptyState'
 import { ChangeBadge, SaveLaterButton, Scoreboard } from '../components/GameCard'
 import { CalendarPlusIcon } from '../components/icons'
-import { HighlightLink, LineupsPanel, MatchPanel, TablePanel, TvListingsPanel } from '../components/MatchExtras'
+import { HighlightLink, LineupsPanel, MatchPanel, TablePanel } from '../components/MatchExtras'
 import { AccessChip, AvailabilityBadge, isOwnedDestination, OwnedChip, WatchCta } from '../components/WatchCta'
 import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
@@ -151,12 +151,6 @@ export function GameDetail() {
             </Link>{' '}
             so we can label games for you.
           </p>
-          <h2 className="display-head" style={{ marginTop: 20 }}>Listed U.S. broadcasts</h2>
-          <p className="disclaimer">
-            What the data feed has on file for this game. It is often incomplete for the U.S., so treat it as extra
-            confirmation, not the whole picture.
-          </p>
-          <TvListingsPanel fixture={fixture} />
         </section>
       ) : null}
 

@@ -5,7 +5,7 @@ const KEEP_DAYS = 14
 
 function looksPostponed(fixture: Fixture): boolean {
   const detail = (fixture.statusDetail ?? '').toLowerCase()
-  return fixture.status === 'unknown' && (detail.includes('postpon') || detail.includes('cancel') || detail.includes('abandon'))
+  return fixture.status === 'postponed' || (fixture.status === 'unknown' && (detail.includes('postpon') || detail.includes('cancel') || detail.includes('abandon')))
 }
 
 /**

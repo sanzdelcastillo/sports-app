@@ -68,6 +68,14 @@ export function SaveLaterButton({ fixtureId, compact = false }: { fixtureId: str
 /** Left column of a listing row: kickoff, live minute, or FT. */
 function When({ fixture, masked }: { fixture: Fixture; masked: boolean }) {
   const kick = formatKickoff(fixture.kickoffUtc)
+  if (fixture.status === 'postponed') {
+    return (
+      <div className="when when-off">
+        <span className="when-clock">{fixture.statusDetail ?? 'Off'}</span>
+        <span className="when-rest">{kick.weekday}</span>
+      </div>
+    )
+  }
   if (fixture.status === 'live') {
     return (
       <div className="when when-live">

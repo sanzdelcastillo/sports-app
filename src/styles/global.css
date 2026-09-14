@@ -2312,3 +2312,142 @@ h3 {
 .stat-fill.away {
   background: var(--amber);
 }
+
+/* ---------- Pitch lineup ---------- */
+
+.pitch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 14px 6px 10px;
+  margin: 8px 0 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1F7A4A 0%, #17643F 100%);
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 24px, rgba(255, 255, 255, 0) 24px 48px),
+    linear-gradient(180deg, #1F7A4A 0%, #17643F 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  min-height: 250px;
+}
+
+.pitch-lines {
+  position: absolute;
+  inset: 6px;
+  border: 1.5px solid rgba(251, 248, 240, 0.35);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.pitch-box {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: -1px;
+  height: 18%;
+  border: 1.5px solid rgba(251, 248, 240, 0.35);
+  border-bottom: 0;
+}
+
+.pitch.away .pitch-box {
+  bottom: auto;
+  top: -1px;
+  border-bottom: 1.5px solid rgba(251, 248, 240, 0.35);
+  border-top: 0;
+}
+
+.pitch-arc {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border: 1.5px solid rgba(251, 248, 240, 0.35);
+  border-radius: 50%;
+  border-top-color: transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+.pitch.away .pitch-arc {
+  top: auto;
+  bottom: -12px;
+  transform: rotate(180deg);
+}
+
+.pitch-row {
+  position: relative;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: flex-start;
+}
+
+.pitch-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 56px;
+}
+
+.pitch-shirt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(251, 248, 240, 0.9);
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+.pitch-name {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: #FBF8F0;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 62px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineup-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lineup-head > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.lineup-view {
+  color: var(--pitch-deep);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.when-off .when-clock {
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.comp-country {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  margin-top: 3px;
+}

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getTeam, teamBySportsDb } from '../data/teams'
+import { getTeam, teamByProviderId } from '../data/teams'
 import type { Fixture, Team } from '../domain/types'
 import {
-  fetchHighlight,
   fetchLineup,
   fetchMatchReport,
   fetchTable,
-  fetchTvListings,
+  highlightSearch,
   type MatchEvent,
   type MatchStat,
   type LeagueTable,
@@ -74,7 +73,7 @@ export function FormDots({ form, label }: { form: string; label?: string }) {
 
 function rowFor(table: LeagueTable | null, team?: Team): StandingRow | undefined {
   if (!table || !team) return undefined
-  return table.rows.find((r) => r.teamSportsDbId === team.sportsDbId)
+  return table.rows.find((r) => r.teamProviderId === team.providerId)
 }
 
 export function TablePanel({ fixture }: { fixture: Fixture }) {
@@ -90,10 +89,10 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
   const table = load.data
   const homeRow = rowFor(table, home)
   const awayRow = rowFor(table, away)
-  const ids = new Set([home?.sportsDbId, away?.sportsDbId])
+  const ids = new Set([home?.providerId, away?.providerId])
   const focus = table.rows.filter((r) => {
     const near = [homeRow, awayRow].some((x) => x && Math.abs(x.rank - r.rank) <= 1)
-    return ids.has(r.teamSportsDbId) || near || r.rank <= 3
+    return ids.has(r.teamProviderId) || near || r.rank <= 3
   })
 
   return (
@@ -135,7 +134,7 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
           {focus.map((r, i) => {
             const gap = i > 0 && r.rank - focus[i - 1].rank > 1
             return (
-              <tr key={r.teamSportsDbId} className={ids.has(r.teamSportsDbId) ? 'is-us' : undefined}>
+              <tr key={r.teamProviderId} className={ids.has(r.teamProviderId) ? 'is-us' : undefined}>
                 <td className={gap ? 'gap' : undefined}>{r.rank}</td>
                 <td className="left">
                   <span className="club-cell">
@@ -152,7 +151,7 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
         </tbody>
       </table>
       <p className="source-note">
-        {table.season} season. Source: TheSportsDB. Standings can lag the final whistle by a few hours.
+        {table.season} season. Source: API-Football. Standings can lag the final whistle by a few hours.
       </p>
     </section>
   )
@@ -160,7 +159,7 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
 
 /** Crest for a table row: our catalogue if we know the club, else the feed's tiny badge. */
 function TableBadge({ row }: { row: StandingRow }) {
-  const known = teamBySportsDb(row.teamSportsDbId)
+  const known = teamByProviderId(row.teamProviderId)
   const src = known?.espnLogoUrl ?? known?.badgeUrl ?? row.badgeUrl
   if (!src) return <span className="table-badge empty" aria-hidden="true" />
   return <img className="table-badge" src={src} alt="" loading="lazy" width={20} height={20} />
@@ -208,8 +207,42 @@ function PlayerLine({ player }: { player: LineupPlayer }) {
   )
 }
 
-function SideLineup({ team, lineup }: { team?: Team; lineup: TeamLineup }) {
+/** The eleven on a pitch: one row per line of the formation, goalkeeper at the bottom, mirrored for the away side. */
+function Pitch({ lineup, away, color }: { lineup: TeamLineup; away: boolean; color: string }) {
+  const rows = new Map<number, LineupPlayer[]>()
+  for (const p of lineup.starters) {
+    if (!p.row) return null
+    rows.set(p.row, [...(rows.get(p.row) ?? []), p])
+  }
+  const ordered = [...rows.entries()].sort((a, b) => (away ? a[0] - b[0] : b[0] - a[0]))
+  return (
+    <div className={`pitch${away ? ' away' : ''}`} aria-hidden="true">
+      <div className="pitch-lines">
+        <span className="pitch-box" />
+        <span className="pitch-arc" />
+      </div>
+      {ordered.map(([row, players]) => (
+        <div key={row} className="pitch-row">
+          {players
+            .sort((a, b) => (a.col ?? 0) - (b.col ?? 0))
+            .map((p) => (
+              <span key={p.id} className="pitch-player">
+                <span className="pitch-shirt" style={{ background: color }}>
+                  {p.number ?? ''}
+                </span>
+                <span className="pitch-name">{p.name.split(' ').slice(-1)[0]}</span>
+              </span>
+            ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SideLineup({ team, lineup, away }: { team?: Team; lineup: TeamLineup; away: boolean }) {
   const [showBench, setShowBench] = useState(false)
+  const [asList, setAsList] = useState(false)
+  const canDraw = lineup.starters.length === 11 && lineup.starters.every((p) => p.row)
   return (
     <div className="lineup-side">
       <div className="lineup-head">
@@ -217,19 +250,24 @@ function SideLineup({ team, lineup }: { team?: Team; lineup: TeamLineup }) {
         <div>
           <div className="form-name">{team?.name}</div>
           <div className="form-meta">
-            {lineup.shape
-              ? `Shape ${lineup.shape}`
-              : lineup.starters.length < 11
-                ? `Partial — ${lineup.starters.length} of 11 named`
-                : `${lineup.starters.length} named`}
+            {lineup.shape ? `${lineup.shape}` : lineup.starters.length < 11 ? `Partial — ${lineup.starters.length} of 11 named` : `${lineup.starters.length} named`}
+            {lineup.coach ? ` · ${lineup.coach}` : ''}
           </div>
         </div>
+        {canDraw ? (
+          <button type="button" className="text-btn lineup-view" onClick={() => setAsList((v) => !v)}>
+            {asList ? 'Pitch' : 'List'}
+          </button>
+        ) : null}
       </div>
-      <ol className="lineup-list">
-        {lineup.starters.map((p) => (
-          <PlayerLine key={p.id} player={p} />
-        ))}
-      </ol>
+      {canDraw && !asList ? <Pitch lineup={lineup} away={away} color={team?.color ?? '#17643F'} /> : null}
+      {!canDraw || asList ? (
+        <ol className="lineup-list">
+          {lineup.starters.map((p) => (
+            <PlayerLine key={p.id} player={p} />
+          ))}
+        </ol>
+      ) : null}
       {lineup.bench.length > 0 ? (
         <>
           <button type="button" className="text-btn bench-toggle" onClick={() => setShowBench((v) => !v)} aria-expanded={showBench}>
@@ -268,65 +306,37 @@ export function LineupsPanel({ fixture }: { fixture: Fixture }) {
   return (
     <section>
       <div className="lineup-grid">
-        <SideLineup team={home} lineup={data.home} />
-        <SideLineup team={away} lineup={data.away} />
+        <SideLineup team={home} lineup={data.home} away={false} />
+        <SideLineup team={away} lineup={data.away} away />
       </div>
       <p className="source-note">
-        Source: TheSportsDB, a community-maintained feed — some games list only part of the eleven. Shape is counted
+        Source: API-Football — lower-tier games may list only part of the eleven. Shape is counted
         from listed positions, not an official formation.
       </p>
     </section>
   )
 }
 
-/* ---------- U.S. TV listings ---------- */
-
-export function TvListingsPanel({ fixture }: { fixture: Fixture }) {
-  const [load, retry] = useLoad(fixture, fetchTvListings)
-
-  if (load.state === 'loading') return <p className="disclaimer">Checking broadcast listings…</p>
-  if (load.state === 'error' && load.busy) return <Busy retry={retry} />
-  if (load.state === 'error' || !load.data || load.data.us.length === 0) {
-    return (
-      <p className="disclaimer">
-        No U.S. broadcast listed at the source yet. The destinations above are your best guide.
-      </p>
-    )
-  }
-  return (
-    <ul className="tv-list" aria-label="U.S. TV listings">
-      {load.data.us.map((l) => (
-        <li key={l.channel} className="tv-row">
-          {l.logoUrl ? <img className="tv-logo" src={l.logoUrl} alt="" loading="lazy" width={28} height={28} /> : <span className="tv-logo empty" aria-hidden="true" />}
-          <span className="tv-channel">{l.channel}</span>
-          {l.language === 'es' ? <span className="badge ghost">Español</span> : null}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 /* ---------- Highlights ---------- */
 
-/** Link to the game's official highlights. Renders nothing until the game is over, or while scores are hidden. */
+/** Highlights search for a finished game. Nothing while scores are hidden. */
 export function HighlightLink({ fixture }: { fixture: Fixture }) {
   const { hideScores, isSavedForLater } = useAppState()
   const masked = hideScores || isSavedForLater(fixture.id)
-  const enabled = fixture.status === 'final' && !masked
-  const [load] = useLoad(fixture, enabled ? fetchHighlight : async () => null)
-  if (!enabled || load.state !== 'ready' || !load.data) return null
+  if (fixture.status !== 'final' || masked) return null
+  const { url } = highlightSearch(fixture)
   return (
     <a
       className="cta secondary wide highlight-link"
-      href={load.data.url}
+      href={url}
       target="_blank"
       rel="noreferrer"
       onClick={(event) => {
         event.preventDefault()
-        void openExternal(load.data!.url)
+        void openExternal(url)
       }}
     >
-      Watch highlights on YouTube ↗
+      Find highlights on YouTube ↗
     </a>
   )
 }
@@ -448,7 +458,7 @@ export function MatchPanel({ fixture }: { fixture: Fixture }) {
           </div>
         </>
       ) : null}
-      <p className="source-note">Events and stats from TheSportsDB{fixture.status === 'live' ? ', refreshed every two minutes' : ''}.</p>
+      <p className="source-note">Events and stats from API-Football{fixture.status === 'live' ? ', refreshed every two minutes' : ''}.</p>
     </div>
   )
 }

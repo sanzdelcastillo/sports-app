@@ -1,10 +1,14 @@
+/**
+ * Per-game detail from API-Football: lineups (with pitch positions), standings, events and stats.
+ * Cached on device; live games refresh on a short cycle.
+ */
 import { getLeague } from '../data/leagues'
+import { getTeam } from '../data/teams'
 import type { Fixture, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { getTeam } from '../data/teams'
-import { getJson, V1, V2 } from './theSportsDb'
+import { AF, getJson, PLAYER_PHOTO, seasonGuess, teamFromProvider } from './apiFootball'
 
-const BASE = V1
+/* ---------- lineups ---------- */
 
 export type LineupSlot = 'GK' | 'DEF' | 'MID' | 'FWD' | 'SUB'
 
@@ -13,14 +17,18 @@ export interface LineupPlayer {
   name: string
   number: number | null
   slot: LineupSlot
+  /** Pitch grid from the source: row 1 is the goalkeeper line, columns run left to right. */
+  row?: number
+  col?: number
   cutoutUrl?: string
 }
 
 export interface TeamLineup {
   starters: LineupPlayer[]
   bench: LineupPlayer[]
-  /** Counted from starters' positions, e.g. "4-3-3". Approximate — the source has no formation field. */
+  /** Formation as published, e.g. "4-2-3-1". */
   shape: string | null
+  coach?: string
 }
 
 export interface MatchLineup {
@@ -29,8 +37,85 @@ export interface MatchLineup {
   fetchedAt: string
 }
 
+interface RawLineupPlayer {
+  player: { id: number; name: string; number: number | null; pos: string | null; grid: string | null }
+}
+
+interface RawLineup {
+  team: { id: number; name: string }
+  coach?: { id: number | null; name: string | null }
+  formation: string | null
+  startXI: RawLineupPlayer[]
+  substitutes: RawLineupPlayer[]
+}
+
+const LINEUP_TTL_MS = 10 * 60 * 1000
+const LINEUP_PREMATCH_TTL_MS = 3 * 60 * 1000
+
+function slotFor(pos: string | null | undefined): LineupSlot {
+  const p = (pos ?? '').toUpperCase()
+  if (p === 'G') return 'GK'
+  if (p === 'D') return 'DEF'
+  if (p === 'M') return 'MID'
+  if (p === 'F') return 'FWD'
+  return 'SUB'
+}
+
+const SLOT_ORDER: Record<LineupSlot, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3, SUB: 4 }
+
+function player(raw: RawLineupPlayer, bench: boolean): LineupPlayer {
+  const [row, col] = (raw.player.grid ?? '').split(':').map((n) => Number(n))
+  return {
+    id: String(raw.player.id),
+    name: raw.player.name,
+    number: raw.player.number,
+    slot: bench ? 'SUB' : slotFor(raw.player.pos),
+    row: Number.isFinite(row) && row > 0 ? row : undefined,
+    col: Number.isFinite(col) && col > 0 ? col : undefined,
+    cutoutUrl: raw.player.id ? PLAYER_PHOTO(raw.player.id) : undefined,
+  }
+}
+
+export function mapLineups(raw: RawLineup[], homeProviderId: string): { home: TeamLineup; away: TeamLineup } {
+  const side = (isHome: boolean): TeamLineup => {
+    const entry = raw.find((r) => (String(r.team.id) === homeProviderId) === isHome)
+    if (!entry) return { starters: [], bench: [], shape: null }
+    const starters = entry.startXI.map((p) => player(p, false)).sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot] || (a.row ?? 0) - (b.row ?? 0) || (a.col ?? 0) - (b.col ?? 0))
+    const bench = entry.substitutes.map((p) => player(p, true))
+    return { starters, bench, shape: entry.formation, coach: entry.coach?.name ?? undefined }
+  }
+  return { home: side(true), away: side(false) }
+}
+
+/** Shape by counting rows, for a lineup that arrived without a formation string. */
+export function shapeOf(starters: LineupPlayer[]): string | null {
+  const rows = new Map<number, number>()
+  for (const p of starters) if (p.row && p.row > 1) rows.set(p.row, (rows.get(p.row) ?? 0) + 1)
+  if (rows.size === 0) return null
+  return [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n).join('-')
+}
+
+function fresh(fetchedAt: string, ttl: number): boolean {
+  return Date.now() - new Date(fetchedAt).getTime() < ttl
+}
+
+export async function fetchLineup(fixture: Fixture): Promise<MatchLineup | null> {
+  const key = `sfp.lineup.${fixture.id}`
+  const cached = readJson<MatchLineup | null>(key, null)
+  const ttl = fixture.status === 'final' ? 7 * 24 * 60 * 60 * 1000 : fixture.status === 'live' ? LINEUP_TTL_MS : LINEUP_PREMATCH_TTL_MS
+  if (cached && (cached.home.starters.length > 0 || fixture.status === 'final') && fresh(cached.fetchedAt, ttl)) return cached
+  const home = getTeam(fixture.homeTeamId)
+  const raw = await getJson<RawLineup[]>(`${AF}/fixtures/lineups?fixture=${fixture.id}`)
+  const mapped = mapLineups(raw, home?.providerId ?? '')
+  const lineup: MatchLineup = { ...mapped, fetchedAt: new Date().toISOString() }
+  writeJson(key, lineup)
+  return lineup
+}
+
+/* ---------- standings ---------- */
+
 export interface StandingRow {
-  teamSportsDbId: string
+  teamProviderId: string
   team: string
   rank: number
   played: number
@@ -43,6 +128,7 @@ export interface StandingRow {
   form: string
   note?: string
   badgeUrl?: string
+  group?: string
 }
 
 export interface LeagueTable {
@@ -52,231 +138,85 @@ export interface LeagueTable {
   fetchedAt: string
 }
 
-interface RawLineup {
-  idPlayer?: string
-  strPlayer?: string
-  strPosition?: string
-  strHome?: string
-  strSubstitute?: string
-  intSquadNumber?: string | null
-  strCutout?: string | null
+interface RawStandingRow {
+  rank: number
+  team: { id: number; name: string; logo: string | null }
+  points: number
+  goalsDiff: number
+  group?: string | null
+  form?: string | null
+  description?: string | null
+  all: { played: number; win: number; draw: number; lose: number }
 }
 
-interface RawTableRow {
-  idTeam?: string
-  strTeam?: string
-  intRank?: string
-  intPlayed?: string
-  intWin?: string
-  intDraw?: string
-  intLoss?: string
-  intGoalDifference?: string
-  intPoints?: string
-  strForm?: string | null
-  strDescription?: string | null
-  strBadge?: string | null
+interface RawStandings {
+  league: { id: number; season: number; standings: RawStandingRow[][] }
 }
 
-const LINEUP_TTL_MS = 10 * 60 * 1000
 const TABLE_TTL_MS = 60 * 60 * 1000
 
-function slotFor(position?: string): LineupSlot {
-  const p = (position ?? '').toLowerCase()
-  if (p.includes('goal')) return 'GK'
-  if (p.includes('def') || p.includes('back')) return 'DEF'
-  if (p.includes('mid')) return 'MID'
-  if (p.includes('for') || p.includes('striker') || p.includes('wing') || p.includes('attack')) return 'FWD'
-  return 'MID'
+export function mapStandings(raw: RawStandings[]): StandingRow[] {
+  const groups = raw[0]?.league.standings ?? []
+  return groups.flatMap((rows) =>
+    rows.map<StandingRow>((r) => ({
+      teamProviderId: String(r.team.id),
+      team: r.team.name,
+      rank: r.rank,
+      played: r.all.played,
+      won: r.all.win,
+      drawn: r.all.draw,
+      lost: r.all.lose,
+      goalDiff: r.goalsDiff,
+      points: r.points,
+      form: (r.form ?? '').replace(/[^WDL]/g, ''),
+      note: r.description ?? undefined,
+      badgeUrl: r.team.logo ?? undefined,
+      group: rows.length < 12 && r.group ? r.group : undefined,
+    })),
+  )
 }
 
-const SLOT_ORDER: Record<LineupSlot, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3, SUB: 4 }
-
-function toInt(value?: string | null): number {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : 0
-}
-
-/** "4-3-3" from the starters' positions; null if the eleven isn't complete. */
-export function shapeOf(starters: LineupPlayer[]): string | null {
-  if (starters.length !== 11) return null
-  const count = (slot: LineupSlot) => starters.filter((p) => p.slot === slot).length
-  const gk = count('GK')
-  if (gk !== 1) return null
-  return [count('DEF'), count('MID'), count('FWD')].join('-')
-}
-
-export function groupLineup(raw: RawLineup[]): { home: TeamLineup; away: TeamLineup } {
-  const side = (home: boolean): TeamLineup => {
-    const players = raw
-      .filter((r) => (r.strHome ?? '').toLowerCase() === (home ? 'yes' : 'no'))
-      .map<LineupPlayer>((r) => ({
-        id: r.idPlayer ?? `${r.strPlayer}-${r.intSquadNumber}`,
-        name: r.strPlayer ?? 'Unknown',
-        number: r.intSquadNumber ? toInt(r.intSquadNumber) : null,
-        slot: (r.strSubstitute ?? '').toLowerCase() === 'yes' ? 'SUB' : slotFor(r.strPosition),
-        cutoutUrl: r.strCutout ?? undefined,
-      }))
-    const starters = players
-      .filter((p) => p.slot !== 'SUB')
-      .sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot] || (a.number ?? 99) - (b.number ?? 99))
-    const bench = players.filter((p) => p.slot === 'SUB').sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
-    return { starters, bench, shape: shapeOf(starters) }
-  }
-  return { home: side(true), away: side(false) }
-}
-
-/** "2026-2027" for European calendars, "2026" for MLS. Used only when the fixture has no season label. */
 export function seasonFor(leagueId: LeagueId, kickoffUtc: string): string {
-  const d = new Date(kickoffUtc)
-  const y = d.getUTCFullYear()
-  if (leagueId === 'mls') return String(y)
-  return d.getUTCMonth() >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`
-}
-
-function fresh(fetchedAt: string, ttl: number): boolean {
-  return Date.now() - new Date(fetchedAt).getTime() < ttl
-}
-
-export async function fetchLineup(fixture: Fixture): Promise<MatchLineup | null> {
-  const key = `sfp.lineup.${fixture.id}`
-  const cached = readJson<MatchLineup | null>(key, null)
-  // A finished match's lineup won't change; a scheduled one might, so re-check every few minutes.
-  if (cached && (fixture.status === 'final' || fresh(cached.fetchedAt, LINEUP_TTL_MS))) return cached
-
-  const data = await getJson<{ lineup: RawLineup[] | null }>(`${BASE}/lookuplineup?id=${fixture.id}`)
-  const raw = data.lineup ?? []
-  if (raw.length === 0) return cached
-  const grouped = groupLineup(raw)
-  const result: MatchLineup = { ...grouped, fetchedAt: new Date().toISOString() }
-  writeJson(key, result)
-  return result
+  const league = getLeague(leagueId)
+  return String(league.currentSeason ?? seasonGuess(new Date(kickoffUtc)))
 }
 
 export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> {
   const league = getLeague(fixture.leagueId)
-  if (!league.sportsDbId) return null
+  if (!league.providerId) return null
   const season = fixture.season ?? seasonFor(fixture.leagueId, fixture.kickoffUtc)
   const key = `sfp.table.${fixture.leagueId}.${season}`
   const cached = readJson<LeagueTable | null>(key, null)
   if (cached && fresh(cached.fetchedAt, TABLE_TTL_MS)) return cached
-
-  const data = await getJson<{ table: RawTableRow[] | null }>(
-    `${BASE}/lookuptable?l=${league.sportsDbId}&s=${encodeURIComponent(season)}`,
-  )
-  const rows = (data.table ?? [])
-    .map<StandingRow>((r) => ({
-      teamSportsDbId: r.idTeam ?? '',
-      team: r.strTeam ?? '',
-      rank: toInt(r.intRank),
-      played: toInt(r.intPlayed),
-      won: toInt(r.intWin),
-      drawn: toInt(r.intDraw),
-      lost: toInt(r.intLoss),
-      goalDiff: toInt(r.intGoalDifference),
-      points: toInt(r.intPoints),
-      form: (r.strForm ?? '').replace(/[^WDL]/g, ''),
-      note: r.strDescription ?? undefined,
-      badgeUrl: r.strBadge ?? undefined,
-    }))
-    .sort((a, b) => a.rank - b.rank)
-  if (rows.length === 0) return cached
-  const result: LeagueTable = { leagueId: fixture.leagueId, season, rows, fetchedAt: new Date().toISOString() }
-  writeJson(key, result)
-  return result
+  const raw = await getJson<RawStandings[]>(`${AF}/standings?league=${league.providerId}&season=${season}`)
+  const rows = mapStandings(raw)
+  for (const row of rows) teamFromProvider({ id: Number(row.teamProviderId), name: row.team, logo: row.badgeUrl }, fixture.leagueId)
+  const table: LeagueTable = { leagueId: fixture.leagueId, season, rows, fetchedAt: new Date().toISOString() }
+  if (rows.length) writeJson(key, table)
+  return table
 }
 
-/* ---------- TV listings ---------- */
-
-export interface TvListing {
-  country: string
-  channel: string
-  /** Local kickoff time as given by the source, e.g. "14:00:00" — informational only. */
-  time?: string
-  logoUrl?: string
-  /** Heuristic from the channel name; the source has no language field. */
-  language: 'en' | 'es' | 'other'
-}
-
-export interface TvListings {
-  us: TvListing[]
-  fetchedAt: string
-}
-
-interface RawTv {
-  strCountry?: string | null
-  strChannel?: string | null
-  strTime?: string | null
-  strLogo?: string | null
-}
-
-const TV_TTL_MS = 60 * 60 * 1000
-const SPANISH = ['telemundo', 'univision', 'tudn', 'vix', 'deportes', 'universo', 'unimás', 'unimas', 'español', 'espanol', 'latino']
-
-export function languageOf(channel: string): TvListing['language'] {
-  const c = channel.toLowerCase()
-  if (SPANISH.some((w) => c.includes(w))) return 'es'
-  return 'en'
-}
-
-export function isUnitedStates(country?: string | null): boolean {
-  const c = (country ?? '').trim().toLowerCase()
-  return c === 'united states' || c === 'usa' || c === 'us' || c === 'united states of america'
-}
-
-export function mapTv(raw: RawTv[]): TvListing[] {
-  return raw
-    .filter((r) => isUnitedStates(r.strCountry) && r.strChannel)
-    .map<TvListing>((r) => ({
-      country: 'United States',
-      channel: (r.strChannel ?? '').trim(),
-      time: r.strTime ?? undefined,
-      logoUrl: r.strLogo ?? undefined,
-      language: languageOf(r.strChannel ?? ''),
-    }))
-    .filter((l, i, all) => all.findIndex((x) => x.channel.toLowerCase() === l.channel.toLowerCase()) === i)
-}
-
-/** U.S. broadcast listings the feed has for this game. Often thin — a supplement to the rights map, not a replacement. */
-export async function fetchTvListings(fixture: Fixture): Promise<TvListings | null> {
-  const key = `sfp.tv.${fixture.id}`
-  const cached = readJson<TvListings | null>(key, null)
-  if (cached && (fixture.status === 'final' || fresh(cached.fetchedAt, TV_TTL_MS))) return cached
-  const data = await getJson<{ tvevent: RawTv[] | null }>(`${BASE}/lookuptv?id=${fixture.id}`)
-  const result: TvListings = { us: mapTv(data.tvevent ?? []), fetchedAt: new Date().toISOString() }
-  writeJson(key, result)
-  return result
-}
-
-/* ---------- Highlights ---------- */
+/* ---------- highlights ---------- */
 
 export interface Highlight {
   url: string
-  fetchedAt: string
 }
 
-interface RawHighlight {
-  strVideo?: string | null
+/** A search link is honest and always works; no provider gives us licensed highlight clips. */
+export function highlightSearch(fixture: Fixture): Highlight {
+  const home = getTeam(fixture.homeTeamId)?.name ?? ''
+  const away = getTeam(fixture.awayTeamId)?.name ?? ''
+  const q = `${home} vs ${away} highlights ${fixture.kickoffUtc.slice(0, 10)}`
+  return { url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}` }
 }
 
-/** Official highlight link for a finished game (premium). Null when the feed has none. */
-export async function fetchHighlight(fixture: Fixture): Promise<Highlight | null> {
-  const key = `sfp.highlight.${fixture.id}`
-  const cached = readJson<Highlight | null>(key, null)
-  if (cached) return cached
-  const data = await getJson<{ lookup: RawHighlight[] | null }>(`${V2}/lookup/event_highlights/${fixture.id}`)
-  const url = (data.lookup ?? [])[0]?.strVideo ?? null
-  if (!url || !/^https:\/\/(www\.)?youtu(\.be|be\.com)\//.test(url)) return null
-  const result: Highlight = { url, fetchedAt: new Date().toISOString() }
-  writeJson(key, result)
-  return result
-}
-
-/* ---------- Match events (timeline) and stats ---------- */
+/* ---------- match events and stats ---------- */
 
 export type EventKind = 'goal' | 'own-goal' | 'penalty' | 'missed-penalty' | 'yellow' | 'red' | 'sub' | 'var' | 'other'
 
 export interface MatchEvent {
   minute: number
+  extra?: number
   side: 'home' | 'away'
   kind: EventKind
   player: string
@@ -296,29 +236,27 @@ export interface MatchReport {
   fetchedAt: string
 }
 
-interface RawTimeline {
-  intTime?: string | null
-  strTimeline?: string | null
-  strTimelineDetail?: string | null
-  strPlayer?: string | null
-  strAssist?: string | null
-  strHome?: string | null
-  strTeam?: string | null
-  strComment?: string | null
+interface RawEvent {
+  time: { elapsed: number; extra: number | null }
+  team: { id: number; name: string }
+  player: { id: number | null; name: string | null }
+  assist: { id: number | null; name: string | null }
+  type: string
+  detail: string
+  comments?: string | null
 }
 
-interface RawStat {
-  strStat?: string | null
-  intHome?: string | null
-  intAway?: string | null
+interface RawStatBlock {
+  team: { id: number; name: string }
+  statistics: { type: string; value: number | string | null }[]
 }
 
 const LIVE_REPORT_TTL_MS = 90 * 1000
 const FINAL_REPORT_TTL_MS = 24 * 60 * 60 * 1000
 
-function kindOf(t: RawTimeline): EventKind {
-  const type = (t.strTimeline ?? '').toLowerCase()
-  const detail = (t.strTimelineDetail ?? '').toLowerCase()
+function kindOf(e: RawEvent): EventKind {
+  const type = e.type.toLowerCase()
+  const detail = e.detail.toLowerCase()
   if (type === 'goal') {
     if (detail.includes('missed')) return 'missed-penalty'
     if (detail.includes('own')) return 'own-goal'
@@ -326,50 +264,55 @@ function kindOf(t: RawTimeline): EventKind {
     return 'goal'
   }
   if (type === 'card') return detail.includes('red') ? 'red' : 'yellow'
-  if (type.startsWith('subst')) return 'sub'
+  if (type === 'subst') return 'sub'
   if (type === 'var') return 'var'
   return 'other'
 }
 
-/** Which side an event belongs to: the team name is more reliable than the feed's home flag. */
-function sideOf(t: RawTimeline, homeName: string, awayName: string): 'home' | 'away' {
-  const team = (t.strTeam ?? '').trim().toLowerCase()
-  if (team && team === homeName.toLowerCase()) return 'home'
-  if (team && team === awayName.toLowerCase()) return 'away'
-  return (t.strHome ?? '').toLowerCase() === 'yes' ? 'home' : 'away'
-}
-
-export function mapTimeline(raw: RawTimeline[], homeName: string, awayName: string): MatchEvent[] {
+export function mapEvents(raw: RawEvent[], homeProviderId: string): MatchEvent[] {
   return raw
-    .filter((t) => t.strPlayer && t.intTime)
-    .map<MatchEvent>((t) => {
-      const kind = kindOf(t)
-      const assist = (t.strAssist ?? '').trim()
-      const comment = (t.strComment ?? '').trim()
+    .filter((e) => e.player?.name || e.type.toLowerCase() === 'var')
+    .map<MatchEvent>((e) => {
+      const kind = kindOf(e)
+      const assist = (e.assist?.name ?? '').trim()
       let detail: string | undefined
       if (kind === 'sub') detail = assist ? `for ${assist}` : undefined
-      else if (kind === 'goal' || kind === 'penalty') detail = assist ? `assist ${assist}` : t.strTimelineDetail?.includes('Penalty') ? 'penalty' : undefined
-      else if (kind === 'yellow' || kind === 'red') detail = comment && comment !== 'NULL' ? comment : undefined
+      else if (kind === 'goal' || kind === 'penalty') detail = assist ? `assist ${assist}` : kind === 'penalty' ? 'penalty' : undefined
+      else if (kind === 'yellow' || kind === 'red') detail = e.comments?.trim() || undefined
       else if (kind === 'missed-penalty') detail = 'penalty missed'
       else if (kind === 'own-goal') detail = 'own goal'
-      return { minute: Number(t.intTime), side: sideOf(t, homeName, awayName), kind, player: (t.strPlayer ?? '').trim(), detail }
+      else if (kind === 'var') detail = e.detail
+      return {
+        minute: e.time.elapsed,
+        extra: e.time.extra ?? undefined,
+        side: String(e.team.id) === homeProviderId ? 'home' : 'away',
+        kind,
+        player: e.player?.name?.trim() || 'VAR',
+        detail,
+      }
     })
-    .sort((a, b) => a.minute - b.minute)
+    .sort((a, b) => a.minute - b.minute || (a.extra ?? 0) - (b.extra ?? 0))
 }
 
-const STAT_ORDER = ['Ball Possession', 'Total Shots', 'Shots on Goal', 'Shots off Goal', 'Blocked Shots', 'Corner Kicks', 'Fouls', 'Offsides', 'Yellow Cards', 'Red Cards', 'Goalkeeper Saves', 'Total passes', 'Passes accurate', 'Passes %']
+const STAT_ORDER = ['Ball Possession', 'expected_goals', 'Total Shots', 'Shots on Goal', 'Shots off Goal', 'Blocked Shots', 'Shots insidebox', 'Shots outsidebox', 'Corner Kicks', 'Fouls', 'Offsides', 'Yellow Cards', 'Red Cards', 'Goalkeeper Saves', 'Total passes', 'Passes accurate', 'Passes %']
+const STAT_LABEL: Record<string, string> = { expected_goals: 'Expected goals (xG)', 'Passes %': 'Pass accuracy' }
 
-export function mapStats(raw: RawStat[]): MatchStat[] {
-  const rows = raw
-    .filter((r) => r.strStat)
-    .map<MatchStat>((r) => {
-      const label = (r.strStat ?? '').trim()
-      const parse = (v?: string | null) => Number(String(v ?? '0').replace('%', '')) || 0
-      return { label, home: parse(r.intHome), away: parse(r.intAway), percent: label.toLowerCase().includes('possession') || label.includes('%') }
+export function mapStats(raw: RawStatBlock[], homeProviderId: string): MatchStat[] {
+  const home = raw.find((b) => String(b.team.id) === homeProviderId) ?? raw[0]
+  const away = raw.find((b) => b !== home)
+  if (!home || !away) return []
+  const val = (v: number | string | null) => (v === null ? 0 : Number(String(v).replace('%', '')) || 0)
+  const rows = home.statistics
+    .map<MatchStat | null>((s) => {
+      const other = away.statistics.find((a) => a.type === s.type)
+      if (!other) return null
+      return { label: STAT_LABEL[s.type] ?? s.type, home: val(s.value), away: val(other.value), percent: s.type === 'Ball Possession' || s.type === 'Passes %' }
     })
+    .filter((s): s is MatchStat => s !== null)
+    .filter((s) => !(s.home === 0 && s.away === 0 && s.label.includes('xG')))
   return rows.sort((a, b) => {
-    const ia = STAT_ORDER.indexOf(a.label)
-    const ib = STAT_ORDER.indexOf(b.label)
+    const ia = STAT_ORDER.findIndex((t) => (STAT_LABEL[t] ?? t) === a.label)
+    const ib = STAT_ORDER.findIndex((t) => (STAT_LABEL[t] ?? t) === b.label)
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
   })
 }
@@ -380,17 +323,12 @@ export async function fetchMatchReport(fixture: Fixture): Promise<MatchReport | 
   const cached = readJson<MatchReport | null>(key, null)
   const ttl = fixture.status === 'final' ? FINAL_REPORT_TTL_MS : LIVE_REPORT_TTL_MS
   if (cached && fresh(cached.fetchedAt, ttl)) return cached
-  const home = getTeam(fixture.homeTeamId)?.name ?? ''
-  const away = getTeam(fixture.awayTeamId)?.name ?? ''
-  const [timeline, stats] = await Promise.all([
-    getJson<{ timeline: RawTimeline[] | null }>(`${BASE}/lookuptimeline?id=${fixture.id}`),
-    getJson<{ eventstats: RawStat[] | null }>(`${BASE}/lookupeventstats?id=${fixture.id}`),
+  const homeId = getTeam(fixture.homeTeamId)?.providerId ?? ''
+  const [events, stats] = await Promise.all([
+    getJson<RawEvent[]>(`${AF}/fixtures/events?fixture=${fixture.id}`),
+    getJson<RawStatBlock[]>(`${AF}/fixtures/statistics?fixture=${fixture.id}`),
   ])
-  const report: MatchReport = {
-    events: mapTimeline(timeline.timeline ?? [], home, away),
-    stats: mapStats(stats.eventstats ?? []),
-    fetchedAt: new Date().toISOString(),
-  }
+  const report: MatchReport = { events: mapEvents(events, homeId), stats: mapStats(stats, homeId), fetchedAt: new Date().toISOString() }
   writeJson(key, report)
   return report
 }

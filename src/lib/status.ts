@@ -4,6 +4,7 @@ import { MATCH_LENGTH_MS, parseUtc } from './time'
 export function inferStatus(fixture: Fixture, now = new Date()): FixtureStatus {
   if (fixture.status === 'final') return 'final'
   if (fixture.status === 'live') return 'live'
+  if (fixture.status === 'postponed') return 'postponed'
   const start = parseUtc(fixture.kickoffUtc).getTime()
   const t = now.getTime()
   if (t >= start && t <= start + MATCH_LENGTH_MS) return 'live'

@@ -2,7 +2,7 @@ import { getLeague, leagueIdFromFollow } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import type { LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { API_ORIGIN } from './theSportsDb'
+import { API_ORIGIN } from './apiFootball'
 
 export interface Headline {
   title: string

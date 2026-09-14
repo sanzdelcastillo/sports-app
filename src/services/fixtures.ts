@@ -4,8 +4,8 @@ import type { DataSource, Fixture } from '../domain/types'
 import { involvesTeam, isMustWatch, withInferredStatus } from '../lib/status'
 import { readJson, writeJson } from '../lib/storage'
 import { isInWindow, parseUtc, weekWindow } from '../lib/time'
-import { fetchLeagueEvents, fetchTeamEvents } from './theSportsDb'
 import { getLeague, leagueIdFromFollow } from '../data/leagues'
+import { fetchLeagueFixtures, fetchTeamFixtures } from './apiFootball'
 
 const CACHE_KEY = 'sfp.lastGoodWeek.v1'
 const CACHE_KEEP_DAYS = 21
@@ -137,13 +137,18 @@ export async function loadFollowedWeek(follows: string[], teamsToFetch: string[]
     const targets = teamsToFetch
       .map((id) => {
         const league = leagueIdFromFollow(id)
-        if (league) return { id, sportsDbId: getLeague(league).sportsDbId, kind: 'league' as const }
-        return { id, sportsDbId: getTeam(id)?.sportsDbId, kind: 'team' as const }
+        if (league) return { id, providerId: getLeague(league).providerId, kind: 'league' as const }
+        return { id, providerId: getTeam(id)?.providerId, kind: 'team' as const }
       })
-      .filter((t): t is { id: string; sportsDbId: string; kind: 'league' | 'team' } => Boolean(t.sportsDbId))
+      .filter((t): t is { id: string; providerId: string; kind: 'league' | 'team' } => Boolean(t.providerId))
 
+    const windowStart = new Date(start.getTime() - 3 * 24 * 60 * 60 * 1000)
     const batches = await Promise.allSettled(
-      targets.map((t) => (t.kind === 'league' ? fetchLeagueEvents(t.sportsDbId) : fetchTeamEvents(t.sportsDbId))),
+      targets.map((t) =>
+        t.kind === 'league'
+          ? fetchLeagueFixtures(getLeague(leagueIdFromFollow(t.id)!), windowStart, end)
+          : fetchTeamFixtures(t.providerId),
+      ),
     )
     const live = batches.flatMap((result) =>
       result.status === 'fulfilled' ? result.value : [],

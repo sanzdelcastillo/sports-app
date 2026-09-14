@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { FOLLOWABLE_COMPETITIONS, getLeague, leagueFollowId, leagueIdFromFollow } from '../data/leagues'
 import { followableTeams, getTeam, registryVersion } from '../data/teams'
 import type { LeagueId, Team } from '../domain/types'
-import { BROWSABLE_LEAGUES, loadLeagueClubs } from '../services/clubs'
+import { BROWSABLE_LEAGUES, loadLeagueClubs, searchClubs } from '../services/clubs'
 import { leagueForEntry, loadLeagueDirectory, popularLeagues, searchLeagues, type DirectoryEntry } from '../services/leagues'
 import { useAppState } from '../stores/AppState'
 import { TeamCrest } from './TeamCrest'
@@ -19,6 +19,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
   const [query, setQuery] = useState('')
   const [tick, setTick] = useState(registryVersion())
   const [status, setStatus] = useState<'idle' | 'loading' | 'partial'>('idle')
+  const [remote, setRemote] = useState<{ q: string; teams: Team[] } | null>(null)
 
   useEffect(() => {
     if (league !== 'leagues' || directory) return
@@ -50,14 +51,38 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
   }, [league])
 
   const q = query.trim().toLowerCase()
+
+  // Any club in the world: after three letters, ask the provider and merge with what's on device.
+  useEffect(() => {
+    if (q.length < 3) {
+      setRemote(null)
+      return
+    }
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      searchClubs(q)
+        .then((teams) => {
+          if (!cancelled) {
+            setRemote({ q, teams })
+            setTick(registryVersion())
+          }
+        })
+        .catch(() => undefined)
+    }, 350)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [q])
+
   const clubs = useMemo(() => {
     void tick
     const all = followableTeams()
     const pool = q || league === 'competitions' || league === 'leagues' ? all : all.filter((t) => t.leagueId === league)
-    return pool
-      .filter((t) => !q || t.name.toLowerCase().includes(q) || t.shortName.toLowerCase().includes(q))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [league, q, tick])
+    const local = pool.filter((t) => !q || t.name.toLowerCase().includes(q) || t.shortName.toLowerCase().includes(q))
+    const extra = remote && remote.q === q ? remote.teams.filter((t) => !local.some((l) => l.id === t.id)) : []
+    return [...local, ...extra].sort((a, b) => a.name.localeCompare(b.name))
+  }, [league, q, tick, remote])
 
   const followed = useMemo(
     () => follows.map((id) => getTeam(id)).filter((t): t is Team => Boolean(t)),
@@ -106,7 +131,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
       <input
         className="search"
         type="search"
-        placeholder="Search any club"
+        placeholder="Search any club in the world"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search clubs"
@@ -203,7 +228,10 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
                   return (
                     <div key={entry.id} className="card comp-row static">
                       <span className="comp-swatch" style={{ background: l.accent }} aria-hidden="true" />
-                      <span className="comp-name">{entry.name}</span>
+                      <span className="comp-name">
+                        {entry.name}
+                        {entry.country && entry.country !== 'World' ? <span className="comp-country">{entry.country}</span> : null}
+                      </span>
                       <span className="league-actions">
                         <button type="button" className="text-btn" onClick={() => setLeague(l.id)}>
                           Clubs ›
@@ -219,7 +247,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
               {leagueQuery.trim() && searchLeagues(directory, leagueQuery).length === 0 ? (
                 <p className="disclaimer">No league matches that. Try the country's name in English.</p>
               ) : null}
-              <p className="source-note">{directory.length} leagues available. "Follow all" adds every game in the league; "Clubs" lets you pick teams.</p>
+              <p className="source-note">{directory.length} leagues and cups available. "Follow all" adds every game; "Clubs" lets you pick teams.</p>
             </>
           ) : null}
         </div>

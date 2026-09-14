@@ -8,7 +8,7 @@ Mobile-first planner for soccer fans in the U.S. It answers three questions only
 
 ## Product lock (non-negotiable)
 
-**This app never streams games and never embeds live video.** There is no player, no rights acquisition, and no ESPN-like in-app playback. Where-to-watch destination badges: **Upcoming · Live · Replay · Unknown** (Live only while the match is in progress; the match ● LIVE pill is separate). Destinations (Apple TV / MLS Season Pass, ESPN+, Peacock, Paramount+, beIN) open in a new tab. Prefer services the user marks as already subscribed. TheSportsDB + bundled seed for v1; ESPN scoreboard proxy later.
+**This app never streams games and never embeds live video.** There is no player, no rights acquisition, and no ESPN-like in-app playback. Where-to-watch destination badges: **Upcoming · Live · Replay · Unknown** (Live only while the match is in progress; the match ● LIVE pill is separate). Destinations (Apple TV / MLS Season Pass, ESPN+, Peacock, Paramount+, beIN) open in a new tab. Prefer services the user marks as already subscribed. API-Football + bundled seed for v1; ESPN scoreboard proxy later.
 
 No monetization or pricing UI in v1.
 
@@ -76,23 +76,17 @@ No API key is required for first boot. Fixture seed data is bundled so My Week i
 
 Native-only behaviour lives in `src/native/`: kickoff alerts via local notifications (`alerts.ts`), share sheet, in-app browser and file hand-off (`external.ts`), status bar / splash / back button (`init.ts`). The shell needs `VITE_API_BASE` set to the deployed site so `/api/sportsdb` resolves; the proxy sends CORS headers for that. Storage writes are mirrored to Capacitor Preferences and restored on launch, because iOS may purge WebView storage.
 
-## Premium data key (TheSportsDB, $9/mo)
+## Data provider (API-Football, Ultra plan ~$29/mo)
 
-The key is read on the server, never shipped to the browser. All data calls go to `/api/sportsdb/...`:
+All match data comes from API-Football v3 through `api/football.js`, which injects `APIFOOTBALL_KEY` server-side and edge-caches per endpoint. `src/services/apiFootball.ts` is the adapter: fixtures (per club via next/last, per competition via season + date window), live (`fixtures?live=all`, one call for everything in play), lineups with grid positions, events, statistics, standings, clubs per league, world-wide club search, and the ~1,200-league directory with country and current season. Provider ids are stored as `providerId` on clubs and leagues; the 33 core clubs and ~40 mapped competitions carry theirs in `src/data`. Coverage is deepest in the major leagues; lower tiers may lack lineups or events, and the UI says so.
 
-- **Deployed (Vercel):** `api/sportsdb.js` is a serverless function. It injects `SPORTSDB_KEY` for v1 calls and sends it as `X-API-KEY` for v2, allows only the endpoints the app uses, and sets edge cache headers so many phones share one upstream request.
-- **Local:** `vite.config.ts` proxies the same paths, reading `SPORTSDB_KEY` from `.env.local` (git-ignored). Copy `.env.example` to `.env.local` and paste the key.
-- **Without a key:** v1 falls back to the free key (one upcoming game per club, 30 req/min); v2 answers 503 and the app quietly turns live scores off.
-
-Set it on Vercel: Project → Settings → Environment Variables → add `SPORTSDB_KEY` for all environments → Save → Deployments → Redeploy the latest.
-
-What the key changes: 10 next / 10 previous games per club instead of 1, 100 requests a minute, real live scores every two minutes while a followed game is in play (`src/services/livescores.ts`), unwatermarked images, and it satisfies TheSportsDB's commercial-use requirement.
+Highlights are a YouTube search link (no provider offers licensed clips). Where-to-watch remains the hand-maintained U.S. rights map.
 
 ## Data freshness and limits
 
 - **Last saved week.** Every successful live fetch is saved on the device (`sfp.lastGoodWeek.v1`). If the source is down, the app shows the saved week (labelled "Saved 3 hr ago") instead of the bundled sample. The sample seed is the last resort only.
 - **Fetch only what's stale.** Each club records when it was last fetched (`sfp.fetchMeta.v1`). On open, only clubs older than 10 minutes are requested; toggling one club costs two requests, not twenty. The Refresh link forces every club.
-- **Rate limit.** TheSportsDB's free key allows roughly 30 requests a minute. Requests are spaced 250 ms apart and a 429 is retried once after 2.5 s; the game page shows "The data source is busy" with Try again if it persists.
+- **Rate limit.** API-Football's free key allows roughly 30 requests a minute. Requests are spaced 250 ms apart and a 429 is retried once after 2.5 s; the game page shows "The data source is busy" with Try again if it persists.
 - **Game extras.** Lineups (`lookuplineup`) and standings with form (`lookuptable`) are cached per game / per league-season for 10 min / 1 hr. The free feed is community-maintained, so some lineups are partial — the UI says so rather than padding them.
 - **Home-screen install.** `public/manifest.webmanifest`, icons, and `public/sw.js` (app shell network-first, hashed assets cache-first, API always network). Registered in production only.
 
@@ -100,9 +94,9 @@ What the key changes: 10 next / 10 previous games per club instead of 1, 100 req
 
 | Layer | Source | Key? |
 | --- | --- | --- |
-| First boot / offline | Bundled seed fixtures (TheSportsDB snapshot, Sep 2026 week) | None |
-| Live refresh | [TheSportsDB](https://www.thesportsdb.com/) public v1 (`json/3`) — CORS-open, no key | None |
-| Crests | TheSportsDB badges, ESPN CDN fallback `a.espncdn.com/i/teamlogos/soccer/500/{id}.png` | None |
+| First boot / offline | Bundled seed fixtures (API-Football snapshot, Sep 2026 week) | None |
+| Live refresh | [API-Football](https://www.api-football.com/) public v1 (`json/3`) — CORS-open, no key | None |
+| Crests | API-Football badges, ESPN CDN fallback `a.espncdn.com/i/teamlogos/soccer/500/{id}.png` | None |
 
 Live fetch is per followed team (`eventsnext` + `eventslast`) and merged with seed so a missed club still appears when seed coverage exists (**favorites-complete**).
 
@@ -132,7 +126,7 @@ Rules: no gradients, no glass, no drop shadows. Games are programme-style listin
 React 19 + TypeScript + Vite. Clean layers:
 
 - `src/data` — teams, leagues, seed fixtures, where-to-watch map
-- `src/services` — TheSportsDB client + week merge
+- `src/services` — API-Football client + week merge
 - `src/stores` — follows, subscriptions, reminders (localStorage)
 - `src/screens` — My Week, Game Detail, Follows, News, Remind, Conflicts, Watch
 

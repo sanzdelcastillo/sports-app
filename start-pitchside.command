@@ -13,7 +13,7 @@ fi
 if [ ! -f .env.local ]; then
   echo ""
   echo "No .env.local yet — running with the FREE data key (one game per club)."
-  echo "For full data: copy .env.example to .env.local and paste your TheSportsDB key."
+  echo "For full data: copy .env.example to .env.local and paste your API-Football key."
   echo ""
 fi
 echo ""
