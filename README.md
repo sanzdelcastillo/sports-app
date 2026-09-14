@@ -1,4 +1,4 @@
-# Watch Plan
+# Pitchside
 
 Mobile-first planner for soccer fans in the U.S. It answers three questions only:
 
@@ -103,7 +103,7 @@ Where-to-watch mappings are **US-market guidance** and can go stale when rights 
 
 ## Design system — Matchday Editorial
 
-Shared with the Watch Plan prototype so both codebases read as one product. Tokens live at the top of `src/styles/global.css`.
+Shared with the Pitchside prototype so both codebases read as one product. Tokens live at the top of `src/styles/global.css`.
 
 | Role | Value |
 | --- | --- |
@@ -116,7 +116,7 @@ Shared with the Watch Plan prototype so both codebases read as one product. Toke
 | Utility type | IBM Plex Mono 500 — chips, timestamps, freshness |
 | Radius | 8px controls, 14px cards, 22px major panels |
 
-Rules: no gradients, no glass, no drop shadows. Games are programme-style listing rows (kickoff column, teams stacked, actions beneath). The only dark surfaces are the hero band and the scoreboard panels. Uncertainty is written in words, not colour alone. Motion is limited to the live pulse dot. Wordmark: WATCH in deep pitch, PLAN in amber.
+Rules: no gradients, no glass, no drop shadows. Games are programme-style listing rows (kickoff column, teams stacked, actions beneath). The only dark surfaces are the hero band and the scoreboard panels. Uncertainty is written in words, not colour alone. Motion is limited to the live pulse dot. Wordmark: PITCH in deep pitch, SIDE in amber.
 
 ## Stack
 

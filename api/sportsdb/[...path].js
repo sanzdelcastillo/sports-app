@@ -1,4 +1,4 @@
-/* Watch Plan → TheSportsDB proxy (Vercel serverless function).
+/* Pitchside → TheSportsDB proxy (Vercel serverless function).
    The premium key lives here as an environment variable (SPORTSDB_KEY) and never reaches the browser.
    Client calls:
      /api/sportsdb/v1/eventsnext.php?id=133604     → https://www.thesportsdb.com/api/v1/json/<KEY>/eventsnext.php?id=133604
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     res.status(r.status)
     res.setHeader('content-type', 'application/json; charset=utf-8')
     res.setHeader('cache-control', r.ok ? cacheFor(version, rest) : 'no-store')
-    res.setHeader('x-watchplan-key', key ? 'premium' : 'free')
+    res.setHeader('x-pitchside-key', key ? 'premium' : 'free')
     res.send(body)
   } catch (error) {
     res.status(502).json({ error: error instanceof Error ? error.message : 'Upstream failed' })

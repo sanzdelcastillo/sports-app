@@ -1,6 +1,6 @@
 {
-  "name": "Watch Plan",
-  "short_name": "WatchPlan",
+  "name": "Pitchside",
+  "short_name": "Pitchside",
   "description": "The week's games for the clubs you follow, in your time zone, with where to watch. Never streams video.",
   "start_url": "/",
   "scope": "/",

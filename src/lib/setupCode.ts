@@ -8,7 +8,7 @@ export interface Setup {
   hideScores: boolean
 }
 
-const PREFIX = 'WP1.'
+const PREFIX = 'PS1.'
 
 function toBase64Url(text: string): string {
   const bytes = new TextEncoder().encode(text)

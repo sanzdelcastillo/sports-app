@@ -1,9 +1,9 @@
 {
-  "name": "watchplan",
+  "name": "pitchside",
   "private": true,
   "version": "1.1.0",
   "type": "module",
-  "description": "Watch Plan \u2014 the week's games for the clubs you follow, with where to watch. Never streams video.",
+  "description": "Pitchside \u2014 the week's games for the clubs you follow, with where to watch. Never streams video.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

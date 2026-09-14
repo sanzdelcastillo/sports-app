@@ -98,7 +98,7 @@ expect(!('stale' in old), 'snapshot drops entries older than two weeks')
 console.log('Calendar file')
 const ics = buildIcs([epl, buli], ['peacock'], 'My Week', new Date('2026-09-14T00:00:00Z'))
 expect(ics.startsWith('BEGIN:VCALENDAR\r\n'), 'starts with VCALENDAR')
-expect(ics.includes('UID:epl-1@watchplan.app'), 'UID is the stable fixture id')
+expect(ics.includes('UID:epl-1@pitchside.app'), 'UID is the stable fixture id')
 expect(ics.includes('DTSTART:20260919T140000Z'), 'kickoff written in UTC')
 expect(ics.includes('DURATION:PT2H'), 'two-hour duration')
 expect(ics.includes('Peacock (in your apps)'), 'access note in description')
@@ -175,10 +175,10 @@ expect(mapClub({ idTeam: '1', strTeam: 'Real Salt Lake' }, 'mls')?.shortName ===
 console.log('Setup code')
 const setup = { follows: ['ars', 't133600'], subscribed: ['peacock' as const], watchLater: ['x1'], hideScores: true }
 const code = encodeSetup(setup)
-expect(code.startsWith('WP1.') && !code.includes('+') && !code.includes('/'), 'code is prefixed and URL-safe')
+expect(code.startsWith('PS1.') && !code.includes('+') && !code.includes('/'), 'code is prefixed and URL-safe')
 const back = decodeSetup(code)
 expect(JSON.stringify(back) === JSON.stringify(setup), 'setup survives a round trip')
-expect(decodeSetup('garbage') === null && decodeSetup('WP1.@@@') === null, 'bad codes are rejected')
+expect(decodeSetup('garbage') === null && decodeSetup('PS1.@@@') === null, 'bad codes are rejected')
 expect(decodeSetup(encodeSetup({ ...setup, subscribed: ['nope' as never] }))?.subscribed.length === 0, 'unknown apps are dropped on restore')
 
 if (failures) {

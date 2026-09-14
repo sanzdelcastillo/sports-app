@@ -90,7 +90,7 @@ export function Settings() {
 
       <div className="date-head">Move my setup to another phone</div>
       <p className="disclaimer">
-        No account needed. Copy this code, open Watch Plan on the other phone, and paste it below there.
+        No account needed. Copy this code, open Pitchside on the other phone, and paste it below there.
       </p>
       <pre className="share-text setup-code" aria-label="Setup code">
         {code}
@@ -116,7 +116,7 @@ export function Settings() {
       <div className="date-head">About</div>
       <div className="card about">
         <p>
-          <strong>Watch Plan</strong> {APP_VERSION}. The week's games for the clubs you follow, in your time zone,
+          <strong>Pitchside</strong> {APP_VERSION}. The week's games for the clubs you follow, in your time zone,
           with where to watch in the U.S.
         </p>
         <p>
@@ -125,7 +125,7 @@ export function Settings() {
           lag rights changes — confirm on the provider before kickoff.
         </p>
         <p>
-          Watch Plan never streams or embeds video; buttons open the provider. Not affiliated with any league, club or
+          Pitchside never streams or embeds video; buttons open the provider. Not affiliated with any league, club or
           broadcaster. Club crests and player images belong to their owners.
         </p>
       </div>

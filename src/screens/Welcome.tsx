@@ -21,9 +21,9 @@ export function Welcome() {
   return (
     <div className="welcome">
       <header className="masthead">
-        <span className="wordmark" aria-label="Watch Plan">
-          <span className="wm-watch">Watch</span>
-          <span className="wm-plan">Plan</span>
+        <span className="wordmark" aria-label="Pitchside">
+          <span className="wm-watch">Pitch</span>
+          <span className="wm-plan">side</span>
         </span>
         <span className="masthead-sub mono-label">Step {step === 'clubs' ? 1 : 2} of 2</span>
       </header>

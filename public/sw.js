@@ -1,8 +1,8 @@
-/* Watch Plan service worker.
+/* Pitchside service worker.
    App shell: network first, fall back to the cached shell when offline.
    Built assets (/assets/*): cache first — Vite gives them content hashes.
    Everything cross-origin (fixtures API, crests, fonts): straight to the network. */
-const VERSION = 'wp-v1'
+const VERSION = 'ps-v1'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg']
 
 self.addEventListener('install', (event) => {
