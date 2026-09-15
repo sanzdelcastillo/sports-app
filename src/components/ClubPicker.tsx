@@ -17,12 +17,13 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
   const [directory, setDirectory] = useState<DirectoryEntry[] | null>(null)
   const [leagueQuery, setLeagueQuery] = useState('')
   const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
   const [tick, setTick] = useState(registryVersion())
   const [status, setStatus] = useState<'idle' | 'loading' | 'partial'>('idle')
   const [remote, setRemote] = useState<{ q: string; teams: Team[] } | null>(null)
 
   useEffect(() => {
-    if (league !== 'leagues' || directory) return
+    if ((league !== 'leagues' && q.length < 3) || directory) return
     let cancelled = false
     void loadLeagueDirectory().then((d) => {
       if (!cancelled) setDirectory(d)
@@ -30,7 +31,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
     return () => {
       cancelled = true
     }
-  }, [league, directory])
+  }, [league, directory, q])
 
   useEffect(() => {
     if (league === 'competitions' || league === 'leagues') return
@@ -49,8 +50,6 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
       cancelled = true
     }
   }, [league])
-
-  const q = query.trim().toLowerCase()
 
   // Any club in the world: after three letters, ask the provider and merge with what's on device.
   useEffect(() => {
@@ -131,7 +130,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
       <input
         className="search"
         type="search"
-        placeholder="Search any club in the world"
+        placeholder="Search any club or league"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search clubs"
@@ -256,6 +255,49 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
       {status === 'loading' && clubs.length === 0 && league !== 'competitions' && league !== 'leagues' ? <p className="disclaimer">Loading clubs…</p> : null}
       {status === 'partial' && !q ? (
         <p className="disclaimer">Showing the clubs we have on device. The full league list needs a connection.</p>
+      ) : null}
+
+      {q.length >= 3 && directory ? (
+        (() => {
+          const found = searchLeagues(directory, q, 5)
+          return found.length ? (
+            <div className="search-leagues">
+              <div className="date-head">Competitions</div>
+              <div className="stack">
+                {found.map((entry) => {
+                  const l = leagueForEntry(entry)
+                  const followId = leagueFollowId(l.id)
+                  const on = followSet.has(followId)
+                  return (
+                    <div key={entry.id} className="card comp-row static">
+                      <span className="comp-swatch" style={{ background: l.accent }} aria-hidden="true" />
+                      <span className="comp-name">
+                        {entry.name}
+                        {entry.country && entry.country !== 'World' ? <span className="comp-country">{entry.country}</span> : null}
+                      </span>
+                      <span className="league-actions">
+                        <button
+                          type="button"
+                          className="text-btn"
+                          onClick={() => {
+                            setQuery('')
+                            setLeague(l.id)
+                          }}
+                        >
+                          Clubs ›
+                        </button>
+                        <button type="button" className={`toggle${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleFollow(followId)}>
+                          {on ? 'Following' : 'Follow all'}
+                        </button>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="date-head">Clubs</div>
+            </div>
+          ) : null
+        })()
       ) : null}
 
       <div className={`club-grid${compact ? ' compact' : ''}`} hidden={(league === 'competitions' || league === 'leagues') && !q}>

@@ -157,6 +157,11 @@ const PROVIDER_LEAGUE: Record<string, LeagueId> = {
   '307': 'saudipro',
 }
 
+/** True for competitions we map by hand (rights, names). */
+export function isMappedProviderId(providerId: string): boolean {
+  return providerId in PROVIDER_LEAGUE
+}
+
 /* ---------- Dynamic league registry (feed leagues beyond the hand-mapped set) ---------- */
 
 const REGISTRY_KEY = 'sfp.leagueRegistry.v1'

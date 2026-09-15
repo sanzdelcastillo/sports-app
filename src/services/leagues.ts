@@ -1,4 +1,4 @@
-import { allLeagues, dynamicLeagueId, getLeague, isDynamicLeagueId, leagueFromProvider, registerLeagues, shortLeagueName } from '../data/leagues'
+import { allLeagues, dynamicLeagueId, getLeague, isDynamicLeagueId, isMappedProviderId, leagueFromProvider, registerLeagues, shortLeagueName } from '../data/leagues'
 import type { League, LeagueId } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
 import { fetchLeagueDirectory } from './apiFootball'
@@ -67,6 +67,14 @@ export async function loadLeagueDirectory(): Promise<DirectoryEntry[]> {
   }
 }
 
+/** Lower is better: the competitions we map by hand, then the popular list, then exact-name matches, then the rest. */
+function rankOf(entry: DirectoryEntry, q: string): number {
+  const mapped = isMappedProviderId(entry.id)
+  const popular = POPULAR_LEAGUE_FEED_IDS.includes(entry.id)
+  const exact = entry.name.toLowerCase() === q
+  return (mapped ? 0 : 10) + (popular ? 0 : 5) + (exact ? 0 : 1)
+}
+
 export function searchLeagues(directory: DirectoryEntry[], query: string, limit = 40): DirectoryEntry[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
@@ -76,12 +84,7 @@ export function searchLeagues(directory: DirectoryEntry[], query: string, limit 
       const text = searchText(e)
       return terms.every((t) => text.includes(t))
     })
-    .sort((a, b) => {
-      const pa = POPULAR_LEAGUE_FEED_IDS.indexOf(a.id)
-      const pb = POPULAR_LEAGUE_FEED_IDS.indexOf(b.id)
-      if ((pa === -1) !== (pb === -1)) return pa === -1 ? 1 : -1
-      return a.name.localeCompare(b.name)
-    })
+    .sort((a, b) => rankOf(a, q) - rankOf(b, q) || a.name.localeCompare(b.name) || (a.country ?? '').localeCompare(b.country ?? ''))
     .slice(0, limit)
 }
 

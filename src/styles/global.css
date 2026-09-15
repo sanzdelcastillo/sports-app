@@ -2722,3 +2722,7 @@ section[aria-label='Tables'] .league-chips {
 .league-chips.week-filter {
   margin: -4px -2px 12px;
 }
+
+.search-leagues {
+  margin-bottom: 4px;
+}
