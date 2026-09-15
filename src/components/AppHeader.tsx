@@ -9,7 +9,6 @@ export function AppHeader() {
         <span className="wm-watch">Pitch</span>
         <span className="wm-plan">side</span>
       </Link>
-      <span className="masthead-sub mono-label">Never streams video</span>
     </header>
   )
 }
