@@ -181,19 +181,24 @@ export function seasonFor(leagueId: LeagueId, kickoffUtc: string): string {
   return String(league.currentSeason ?? seasonGuess(new Date(kickoffUtc)))
 }
 
-export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> {
-  const league = getLeague(fixture.leagueId)
+/** Standings for a competition. Empty rows mean the source has no table (knockout cups, or none yet). */
+export async function fetchStandings(leagueId: LeagueId, season?: string): Promise<LeagueTable | null> {
+  const league = getLeague(leagueId)
   if (!league.providerId) return null
-  const season = fixture.season ?? seasonFor(fixture.leagueId, fixture.kickoffUtc)
-  const key = `sfp.table.${fixture.leagueId}.${season}`
+  const s = season ?? String(league.currentSeason ?? seasonGuess())
+  const key = `sfp.table.${leagueId}.${s}`
   const cached = readJson<LeagueTable | null>(key, null)
   if (cached && fresh(cached.fetchedAt, TABLE_TTL_MS)) return cached
-  const raw = await getJson<RawStandings[]>(`${AF}/standings?league=${league.providerId}&season=${season}`)
+  const raw = await getJson<RawStandings[]>(`${AF}/standings?league=${league.providerId}&season=${s}`)
   const rows = mapStandings(raw)
-  for (const row of rows) teamFromProvider({ id: Number(row.teamProviderId), name: row.team, logo: row.badgeUrl }, fixture.leagueId)
-  const table: LeagueTable = { leagueId: fixture.leagueId, season, rows, fetchedAt: new Date().toISOString() }
-  if (rows.length) writeJson(key, table)
+  for (const row of rows) teamFromProvider({ id: Number(row.teamProviderId), name: row.team, logo: row.badgeUrl }, leagueId)
+  const table: LeagueTable = { leagueId, season: s, rows, fetchedAt: new Date().toISOString() }
+  writeJson(key, table)
   return table
+}
+
+export async function fetchTable(fixture: Fixture): Promise<LeagueTable | null> {
+  return fetchStandings(fixture.leagueId, fixture.season ?? seasonFor(fixture.leagueId, fixture.kickoffUtc))
 }
 
 /* ---------- highlights ---------- */

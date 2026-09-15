@@ -4,6 +4,7 @@ import { AppHeader } from '../components/AppHeader'
 import { ClubStrip } from '../components/ClubStrip'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, GameCardSkeleton, GameRow } from '../components/GameCard'
+import { TablesView } from '../components/MatchExtras'
 import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
 import type { FixtureChange } from '../domain/types'
@@ -65,7 +66,7 @@ export function MyWeek() {
     liveFeed,
   } = useAppState()
 
-  const [view, setView] = useState<'week' | 'results'>('week')
+  const [view, setView] = useState<'week' | 'results' | 'tables'>('week')
   const { liveNow, featured, upcomingGroups, recentGroups, resultGroups } = useMemo(() => {
     const live = week.fixtures.filter((f) => f.status === 'live')
     const upcoming = week.fixtures.filter((f) => f.status !== 'final' && f.status !== 'live')
@@ -106,7 +107,8 @@ export function MyWeek() {
     [changes, week.fixtures],
   )
 
-  const overlaps = useMemo(() => findConflicts(week.fixtures).length, [week.fixtures])
+  // Games caught in an overlap (not pairs — 80 cup ties on one afternoon would make pairs explode).
+  const overlaps = useMemo(() => new Set(findConflicts(week.fixtures).flatMap((c) => [c.a.id, c.b.id])).size, [week.fixtures])
 
   const laterFixtures = useMemo(
     () =>
@@ -257,7 +259,12 @@ export function MyWeek() {
                 <button type="button" role="tab" aria-selected={view === 'results'} className={`view-tab${view === 'results' ? ' on' : ''}`} onClick={() => setView('results')}>
                   Results{resultGroups.length ? ` · ${resultGroups.reduce((n, [, fx]) => n + fx.length, 0)}` : ''}
                 </button>
+                <button type="button" role="tab" aria-selected={view === 'tables'} className={`view-tab${view === 'tables' ? ' on' : ''}`} onClick={() => setView('tables')}>
+                  Tables
+                </button>
               </div>
+
+              {view === 'tables' ? <TablesView /> : null}
 
               {view === 'results' ? (
                 <section aria-label="Results">

@@ -2631,7 +2631,7 @@ section[aria-label='Next up'] .featured .badge.owned {
 
 .view-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 4px;
   margin: 4px 0 14px;
@@ -2656,4 +2656,16 @@ section[aria-label='Next up'] .featured .badge.owned {
 .view-tab.on {
   background: var(--pitch-deep);
   color: var(--paper-hi);
+}
+
+.standings .form-cell {
+  padding-left: 6px;
+}
+
+.standings .form-cell .form-dots {
+  justify-content: flex-end;
+}
+
+section[aria-label='Tables'] .league-chips {
+  margin-bottom: 10px;
 }

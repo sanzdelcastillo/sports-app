@@ -205,7 +205,11 @@ export async function fetchLeagueFixtures(league: League, from: Date, to: Date):
   if (!league.providerId) return []
   const season = league.currentSeason ?? seasonGuess(from)
   const rows = await getJson<AfFixture[]>(`${AF}/fixtures?league=${league.providerId}&season=${season}&from=${ymd(from)}&to=${ymd(to)}`)
-  return rows.map(mapFixture).filter((f): f is Fixture => f !== null)
+  // Following a cup means the cup proper; nobody wants 80 qualifying ties between non-league sides.
+  return rows
+    .filter((r) => !/qualif|prelim|extra preliminary/i.test(r.league.round ?? ''))
+    .map(mapFixture)
+    .filter((f): f is Fixture => f !== null)
 }
 
 /** European-style seasons are named by their starting year; a July cut-over is right for most of the world. */

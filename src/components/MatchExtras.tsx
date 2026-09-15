@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getLeague, leagueIdFromFollow } from '../data/leagues'
 import { getTeam, teamByProviderId } from '../data/teams'
-import type { Fixture, Team } from '../domain/types'
+import { readJson, writeJson } from '../lib/storage'
+import type { Fixture, LeagueId, Team } from '../domain/types'
 import {
   fetchLineup,
   fetchMatchReport,
+  fetchStandings,
   fetchTable,
   highlightSearch,
   type MatchEvent,
@@ -118,38 +121,7 @@ export function TablePanel({ fixture }: { fixture: Fixture }) {
           )
         })}
       </div>
-      <table className="standings" aria-label={`${table.season} table`}>
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col" className="left">
-              Club
-            </th>
-            <th scope="col">P</th>
-            <th scope="col">GD</th>
-            <th scope="col">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {focus.map((r, i) => {
-            const gap = i > 0 && r.rank - focus[i - 1].rank > 1
-            return (
-              <tr key={r.teamProviderId} className={ids.has(r.teamProviderId) ? 'is-us' : undefined}>
-                <td className={gap ? 'gap' : undefined}>{r.rank}</td>
-                <td className="left">
-                  <span className="club-cell">
-                    <TableBadge row={r} />
-                    {r.team}
-                  </span>
-                </td>
-                <td>{r.played}</td>
-                <td>{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
-                <td className="pts">{r.points}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+      <StandingsTable rows={focus} highlight={ids} season={table.season} gaps />
       <p className="source-note">
         {table.season} season. Source: API-Football. Standings can lag the final whistle by a few hours.
       </p>
@@ -459,5 +431,135 @@ export function MatchPanel({ fixture }: { fixture: Fixture }) {
       ) : null}
       <p className="source-note">Events and stats from API-Football{fixture.status === 'live' ? ', refreshed every two minutes' : ''}.</p>
     </div>
+  )
+}
+
+/* ---------- Standings table (shared) ---------- */
+
+export function StandingsTable({ rows, highlight, season, gaps = false, showForm = false }: { rows: StandingRow[]; highlight: Set<string | undefined>; season: string; gaps?: boolean; showForm?: boolean }) {
+  const groups = new Map<string, StandingRow[]>()
+  for (const r of rows) groups.set(r.group ?? '', [...(groups.get(r.group ?? '') ?? []), r])
+  return (
+    <>
+      {[...groups.entries()].map(([group, list]) => (
+        <div key={group || 'all'}>
+          {group ? <div className="date-head">{group}</div> : null}
+          <table className="standings" aria-label={`${season} table${group ? ` ${group}` : ''}`}>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col" className="left">
+                  Club
+                </th>
+                <th scope="col">P</th>
+                <th scope="col">GD</th>
+                <th scope="col">Pts</th>
+                {showForm ? <th scope="col">Form</th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((r, i) => {
+                const gap = gaps && i > 0 && r.rank - list[i - 1].rank > 1
+                return (
+                  <tr key={r.teamProviderId} className={highlight.has(r.teamProviderId) ? 'is-us' : undefined}>
+                    <td className={gap ? 'gap' : undefined}>{r.rank}</td>
+                    <td className="left">
+                      <span className="club-cell">
+                        <TableBadge row={r} />
+                        {r.team}
+                      </span>
+                    </td>
+                    <td>{r.played}</td>
+                    <td>{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
+                    <td className="pts">{r.points}</td>
+                    {showForm ? (
+                      <td className="form-cell">
+                        <FormDots form={r.form.slice(-5)} label={r.team} />
+                      </td>
+                    ) : null}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </>
+  )
+}
+
+/* ---------- Tables for everything you follow ---------- */
+
+function leaguesYouFollow(follows: string[]): LeagueId[] {
+  const ids: LeagueId[] = []
+  for (const f of follows) {
+    const league = leagueIdFromFollow(f)
+    const id = league ?? getTeam(f)?.leagueId
+    if (id && id !== 'other' && getLeague(id).providerId && !ids.includes(id)) ids.push(id)
+  }
+  return ids
+}
+
+export function TablesView() {
+  const { follows } = useAppState()
+  const leagues = useMemo(() => leaguesYouFollow(follows), [follows])
+  const [selected, setSelected] = useState<LeagueId | null>(() => readJson<LeagueId | null>('sfp.tablesLeague.v1', null))
+  const active = selected && leagues.includes(selected) ? selected : (leagues[0] ?? null)
+  const [state, setState] = useState<{ league: LeagueId; table: LeagueTable | null; error?: boolean } | null>(null)
+
+  useEffect(() => {
+    if (!active) return
+    let cancelled = false
+    fetchStandings(active)
+      .then((table) => {
+        if (!cancelled) setState({ league: active, table })
+      })
+      .catch(() => {
+        if (!cancelled) setState({ league: active, table: null, error: true })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [active])
+
+  const mine = useMemo(() => new Set(follows.map((id) => getTeam(id)?.providerId)), [follows])
+
+  if (leagues.length === 0) {
+    return <p className="disclaimer">Follow a club or a competition and its table shows up here.</p>
+  }
+  const table = state?.league === active ? state.table : null
+  const loading = !state || state.league !== active
+
+  return (
+    <section aria-label="Tables">
+      <div className="league-chips" role="tablist" aria-label="Your competitions">
+        {leagues.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={active === id}
+            className={`league-chip${active === id ? ' on' : ''}`}
+            onClick={() => {
+              setSelected(id)
+              writeJson('sfp.tablesLeague.v1', id)
+            }}
+          >
+            {getLeague(id).shortName}
+          </button>
+        ))}
+      </div>
+      {loading ? <p className="disclaimer">Loading the table…</p> : null}
+      {!loading && state?.error ? <p className="disclaimer">The table is unavailable right now.</p> : null}
+      {!loading && table && table.rows.length === 0 ? (
+        <p className="disclaimer">{getLeague(active!).name} has no table — it's a knockout competition, or the league phase hasn't started.</p>
+      ) : null}
+      {!loading && table && table.rows.length > 0 ? (
+        <>
+          <StandingsTable rows={table.rows} highlight={mine} season={table.season} showForm />
+          <p className="source-note">{getLeague(active!).name} · {table.season} season · your clubs highlighted.</p>
+        </>
+      ) : null}
+    </section>
   )
 }
