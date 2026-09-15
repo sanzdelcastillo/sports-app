@@ -220,7 +220,12 @@ expect(lu.home.shape === '4-2-3-1' && lu.home.coach === 'K. McKenna' && lu.home.
 expect(lu.home.bench.length === 1 && lu.home.bench[0].slot === 'SUB' && lu.away.starters.length === 0, 'bench and empty side')
 expect(shapeOf([{ id: 'a', name: 'x', number: 1, slot: 'GK', row: 1 }, { id: 'b', name: 'y', number: 2, slot: 'DEF', row: 2 }, { id: 'c', name: 'z', number: 3, slot: 'DEF', row: 2 }]) === '2', 'shape counted from rows when no formation string')
 const rows = mapStandings([{ league: { id: 135, season: 2026, standings: [[{ rank: 1, team: { id: 487, name: 'Lazio', logo: null }, points: 10, goalsDiff: 5, form: 'DWWW', all: { played: 4, win: 3, draw: 1, lose: 0 } }]] } }])
-expect(rows.length === 1 && rows[0].form === 'DWWW' && rows[0].teamProviderId === '487', 'standings mapped')
+expect(rows.length === 1 && rows[0].form === 'DWWW' && rows[0].teamProviderId === '487' && rows[0].group === undefined, 'standings mapped; single table carries no section label')
+const mls = mapStandings([{ league: { id: 253, season: 2026, standings: [
+  Array.from({ length: 15 }, (_, i) => ({ rank: i + 1, team: { id: 1600 + i, name: `East ${i + 1}`, logo: null }, points: 40 - i, goalsDiff: 0, group: 'Eastern Conference', all: { played: 30, win: 10, draw: 10, lose: 10 } })),
+  Array.from({ length: 15 }, (_, i) => ({ rank: i + 1, team: { id: 1700 + i, name: `West ${i + 1}`, logo: null }, points: 40 - i, goalsDiff: 0, group: 'Western Conference', all: { played: 30, win: 10, draw: 10, lose: 10 } })),
+] } }])
+expect(mls.length === 30 && mls[0].group === 'Eastern Conference' && mls[29].group === 'Western Conference', 'MLS conferences keep their headings')
 expect(seasonFor('epl', '2026-09-14T00:00:00Z') === '2026' && seasonFor('l9999', '2026-03-01T00:00:00Z') === '2025', 'season from the provider or a July cut-over guess')
 teamFromProvider({ id: 5000, name: 'Real Salt Lake', code: null }, 'mls')
 expect(getTeam('t5000')?.shortName === 'RSL', 'short code from initials when the provider has none')

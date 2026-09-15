@@ -157,6 +157,7 @@ const TABLE_TTL_MS = 60 * 60 * 1000
 
 export function mapStandings(raw: RawStandings[]): StandingRow[] {
   const groups = raw[0]?.league.standings ?? []
+  const sectioned = groups.length > 1 // conferences, groups, league phases with splits
   return groups.flatMap((rows) =>
     rows.map<StandingRow>((r) => ({
       teamProviderId: String(r.team.id),
@@ -171,7 +172,7 @@ export function mapStandings(raw: RawStandings[]): StandingRow[] {
       form: (r.form ?? '').replace(/[^WDL]/g, ''),
       note: r.description ?? undefined,
       badgeUrl: r.team.logo ?? undefined,
-      group: rows.length < 12 && r.group ? r.group : undefined,
+      group: sectioned && r.group ? r.group : undefined,
     })),
   )
 }
