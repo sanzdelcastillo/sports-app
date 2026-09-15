@@ -187,7 +187,7 @@ export async function fetchStandings(leagueId: LeagueId, season?: string): Promi
   const league = getLeague(leagueId)
   if (!league.providerId) return null
   const s = season ?? String(league.currentSeason ?? seasonGuess())
-  const key = `sfp.table.${leagueId}.${s}`
+  const key = `sfp.table.${leagueId}.${s}.v2`
   const cached = readJson<LeagueTable | null>(key, null)
   if (cached && fresh(cached.fetchedAt, TABLE_TTL_MS)) return cached
   const raw = await getJson<RawStandings[]>(`${AF}/standings?league=${league.providerId}&season=${s}`)
