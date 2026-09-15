@@ -99,6 +99,8 @@ export interface League {
   shortName: string
   accent: string
   providerId?: string
+  /** Short badge text for tiles (UCL, UEL); shortName is the readable label. */
+  code?: string
   /** Season year the provider is currently serving for this league. */
   currentSeason?: number
   country?: string

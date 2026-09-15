@@ -6,6 +6,8 @@ import type { DestinationId, Fixture } from '../domain/types'
 import { involvesTeam } from '../lib/status'
 import { formatKickoff } from '../lib/time'
 import { readLastGood } from '../services/fixtures'
+import { fetchNextLeagueFixture } from '../services/apiFootball'
+import { useEffect, useState } from 'react'
 import { TeamCrest } from './TeamCrest'
 
 function nextBeyondWeek(leagueId: string): Fixture | undefined {
@@ -29,19 +31,40 @@ export function ClubStrip({
   fixtures: Fixture[]
   subscribed: DestinationId[]
 }) {
+  const followedLeagues = follows.map(leagueIdFromFollow).filter((id): id is NonNullable<typeof id> => id !== null)
   const upcoming = fixtures.filter((f) => f.status !== 'final').sort((a, b) => a.kickoffUtc.localeCompare(b.kickoffUtc))
+  const [nextKnown, setNextKnown] = useState<Record<string, Fixture | null>>({})
+
+  // Competitions with nothing in the window: ask once for their next date.
+  useEffect(() => {
+    let cancelled = false
+    const idle = followedLeagues.filter((id) => !upcoming.some((f) => f.leagueId === id) && !nextBeyondWeek(id) && !(id in nextKnown))
+    if (!idle.length) return
+    void Promise.all(idle.map((id) => fetchNextLeagueFixture(getLeague(id)).catch(() => null))).then((results) => {
+      if (cancelled) return
+      setNextKnown((prev) => {
+        const out = { ...prev }
+        idle.forEach((id, i) => (out[id] = results[i]))
+        return out
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [follows.join(','), upcoming.length])
 
   return (
     <div className="club-strip" role="list" aria-label="Next game for everything you follow">
-      {follows.map(leagueIdFromFollow).filter((id): id is NonNullable<typeof id> => id !== null).map((leagueId) => {
+      {followedLeagues.map((leagueId) => {
         const league = getLeague(leagueId)
         const thisWeek = upcoming.filter((f) => f.leagueId === leagueId)
-        const next = thisWeek[0] ?? nextBeyondWeek(leagueId)
+        const next = thisWeek[0] ?? nextBeyondWeek(leagueId) ?? nextKnown[leagueId] ?? undefined
         const inWeek = thisWeek.length > 0
         const body = (
           <>
             <span className="comp-badge" style={{ background: league.accent }} aria-hidden="true">
-              {league.shortName.slice(0, 3).toUpperCase()}
+              {(league.code ?? league.shortName.slice(0, 3)).toUpperCase()}
             </span>
             <span className="club-abbr">{league.shortName}</span>
             <span className="club-when">

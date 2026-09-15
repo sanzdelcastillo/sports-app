@@ -6,6 +6,7 @@
 import { getLeague, leagueFromProvider } from '../data/leagues'
 import { registerTeams, teamByProviderId } from '../data/teams'
 import type { Fixture, FixtureStatus, League, LeagueId, Team } from '../domain/types'
+import { readJson, writeJson } from '../lib/storage'
 
 export const API_ORIGIN = ((import.meta.env?.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
 export const AF = `${API_ORIGIN}/api/football`
@@ -210,6 +211,18 @@ export async function fetchLeagueFixtures(league: League, from: Date, to: Date):
     .filter((r) => !/qualif|prelim|extra preliminary/i.test(r.league.round ?? ''))
     .map(mapFixture)
     .filter((f): f is Fixture => f !== null)
+}
+
+/** The next scheduled game in a competition, for "Next Oct 13" between matchdays. Cached half a day. */
+export async function fetchNextLeagueFixture(league: League): Promise<Fixture | null> {
+  if (!league.providerId) return null
+  const key = `sfp.nextGame.${league.id}`
+  const cached = readJson<{ fixture: Fixture | null; fetchedAt: string } | null>(key, null)
+  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < 12 * 60 * 60 * 1000) return cached.fixture
+  const rows = await getJson<AfFixture[]>(`${AF}/fixtures?league=${league.providerId}&next=1`)
+  const fixture = rows.map(mapFixture).find((f): f is Fixture => f !== null) ?? null
+  writeJson(key, { fixture, fetchedAt: new Date().toISOString() })
+  return fixture
 }
 
 /** European-style seasons are named by their starting year; a July cut-over is right for most of the world. */
