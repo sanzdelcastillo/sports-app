@@ -15,7 +15,9 @@ import { readJson, writeJson } from '../lib/storage'
 import { bootTeams, rememberCustomTeams } from '../services/clubs'
 import { alertsPermitted, cancelAllAlerts, scheduleKickoffAlerts } from '../native/alerts'
 import { isNative } from '../native/platform'
-import { loadFollowedWeek, readLastGood, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
+import { loadFollowedWeek, readLastGood, rememberWeek, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
+import { fetchFixturesByIds } from '../services/apiFootball'
+import { withInferredStatus } from '../lib/status'
 import { anyInPlay, applyLive, fetchLiveSoccer, type LiveUpdate } from '../services/livescores'
 
 const FOLLOWS_KEY = 'sfp.follows.v1'
@@ -144,6 +146,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const lastLivePoll = useRef(0)
   const lastLiveUpdates = useRef<LiveUpdate[]>([])
+  const settling = useRef<Set<string>>(new Set())
+
+  /** Replace fixtures with fresh provider records (final scores and status) and remember them. */
+  const settle = useCallback(async (ids: string[]) => {
+    const fresh = ids.filter((id) => !settling.current.has(id))
+    if (!fresh.length) return
+    fresh.forEach((id) => settling.current.add(id))
+    try {
+      const results = await fetchFixturesByIds(fresh)
+      if (!results.length) return
+      const byId = new Map(results.map((f) => [f.id, withInferredStatus(f)]))
+      setWeek((prev) => {
+        const fixtures = prev.fixtures.map((f) => byId.get(f.id) ?? f)
+        rememberWeek(fixtures, prev.fetchedAt)
+        return { ...prev, fixtures }
+      })
+    } catch {
+      /* next poll will try again */
+    } finally {
+      fresh.forEach((id) => settling.current.delete(id))
+    }
+  }, [])
+
+  // Stale "live" games that no poll will ever cover (opened the app the next morning): settle them on sight.
+  useEffect(() => {
+    const stale = week.fixtures.filter((f) => f.status === 'live' && !anyInPlay([f])).map((f) => f.id)
+    if (stale.length) void settle(stale)
+  }, [week.fixtures, settle])
   // Live scores: poll every two minutes, but only while one of the week's games could be in play.
   useEffect(() => {
     if (liveFeed === 'off' || !anyInPlay(week.fixtures)) return
@@ -164,6 +194,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         lastLiveUpdates.current = updates
         setLiveFeed('on')
         apply(updates)
+        // Games we had as live that are no longer in play: fetch their final result by id.
+        const inPlay = new Set(updates.map((u) => u.fixtureId))
+        const ended = week.fixtures.filter((f) => f.status === 'live' && !inPlay.has(f.id)).map((f) => f.id)
+        if (ended.length) void settle(ended)
       } catch (error) {
         if (!cancelled && error instanceof Error && error.name === 'NoDataKey') setLiveFeed('off')
       }

@@ -1,12 +1,15 @@
 import type { Fixture, FixtureStatus } from '../domain/types'
 import { MATCH_LENGTH_MS, parseUtc } from './time'
 
+/** A game reported live can't still be live this long after kickoff; the source just never told us it ended. */
+const STALE_LIVE_MS = MATCH_LENGTH_MS + 45 * 60 * 1000
+
 export function inferStatus(fixture: Fixture, now = new Date()): FixtureStatus {
   if (fixture.status === 'final') return 'final'
-  if (fixture.status === 'live') return 'live'
   if (fixture.status === 'postponed') return 'postponed'
   const start = parseUtc(fixture.kickoffUtc).getTime()
   const t = now.getTime()
+  if (fixture.status === 'live') return t > start + STALE_LIVE_MS ? 'final' : 'live'
   if (t >= start && t <= start + MATCH_LENGTH_MS) return 'live'
   if (t > start + MATCH_LENGTH_MS) return 'final'
   return fixture.status

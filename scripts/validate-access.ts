@@ -11,7 +11,7 @@ import { favoritesComplete } from '../src/services/fixtures'
 import { anyInPlay, applyLive, type LiveUpdate } from '../src/services/livescores'
 import { mapLineups, mapStandings, seasonFor, shapeOf } from '../src/services/matchExtras'
 import { mapFixture, statusOf, teamFromProvider } from '../src/services/apiFootball'
-import { involvesTeam, scoreLabel } from '../src/lib/status'
+import { inferStatus, involvesTeam, scoreLabel } from '../src/lib/status'
 import { liveClockLabel } from '../src/components/LiveClock'
 import { mapEvents, mapStats } from '../src/services/matchExtras'
 import { getLeague, leagueIdFromFollow } from '../src/data/leagues'
@@ -224,6 +224,13 @@ expect(rows.length === 1 && rows[0].form === 'DWWW' && rows[0].teamProviderId ==
 expect(seasonFor('epl', '2026-09-14T00:00:00Z') === '2026' && seasonFor('l9999', '2026-03-01T00:00:00Z') === '2025', 'season from the provider or a July cut-over guess')
 teamFromProvider({ id: 5000, name: 'Real Salt Lake', code: null }, 'mls')
 expect(getTeam('t5000')?.shortName === 'RSL', 'short code from initials when the provider has none')
+
+console.log('Stale live games')
+const yesterday = { ...cupTie!, status: 'live' as const, kickoffUtc: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), liveMinute: 90, livePeriod: '2H', liveMinuteAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString() }
+expect(inferStatus(yesterday) === 'final', 'a live game from yesterday is never still live')
+expect(inferStatus({ ...yesterday, kickoffUtc: new Date(Date.now() - 60 * 60 * 1000).toISOString() }) === 'live', 'a live game from an hour ago still is')
+expect(liveClockLabel(yesterday).text === "90'" && !liveClockLabel(yesterday).running, 'clock holds the last minute when the source goes quiet')
+expect(liveClockLabel({ ...liveFx, liveMinute: 90, livePeriod: '2H', liveMinuteAt: new Date(Date.now() - 14 * 60_000).toISOString() }).text === "90+14'", 'added time is shown up to a sensible cap')
 
 console.log('Share this game')
 const shareTxt = gameShareText(epl, ['peacock'], { home: 2, away: 1 })

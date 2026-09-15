@@ -26,11 +26,13 @@ export function liveClockLabel(fixture: Fixture, now = Date.now()): { text: stri
     if (period === '2H') baseMinute = 45
   }
   const elapsed = Math.max(0, Math.floor((now - baseAt) / 1000))
+  // Nothing has come from the source for a long while: hold the last minute rather than count into fiction.
+  if (elapsed > 15 * 60) return { text: `${baseMinute}'`, running: false }
   const cap = HALF_END[period]
   const rawMinute = baseMinute + Math.floor(elapsed / 60)
   const seconds = elapsed % 60
   if (cap && rawMinute >= cap) {
-    const extra = rawMinute - cap
+    const extra = Math.min(rawMinute - cap, 15)
     return { text: extra > 0 ? `${cap}+${extra}'` : `${cap}'`, running: true }
   }
   return { text: `${rawMinute}:${String(seconds).padStart(2, '0')}`, running: true }

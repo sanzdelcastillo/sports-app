@@ -220,6 +220,17 @@ export async function fetchFixtureById(id: string): Promise<Fixture | null> {
   return rows.map(mapFixture).find((f): f is Fixture => f !== null) ?? null
 }
 
+/** Several games by id in one request (the provider takes up to 20 dash-separated ids). */
+export async function fetchFixturesByIds(ids: string[]): Promise<Fixture[]> {
+  const clean = [...new Set(ids.filter((id) => /^\d+$/.test(id)))]
+  const out: Fixture[] = []
+  for (let i = 0; i < clean.length; i += 20) {
+    const rows = await getJson<AfFixture[]>(`${AF}/fixtures?ids=${clean.slice(i, i + 20).join('-')}`)
+    out.push(...rows.map(mapFixture).filter((f): f is Fixture => f !== null))
+  }
+  return out
+}
+
 /** Everything in play right now, one request for the whole world. */
 export async function fetchLiveFixtures(): Promise<Fixture[]> {
   const rows = await getJson<AfFixture[]>(`${AF}/fixtures?live=all`)

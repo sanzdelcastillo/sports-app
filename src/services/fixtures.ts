@@ -20,6 +20,11 @@ export function readLastGood(): LastGood | null {
   return readJson<LastGood | null>(CACHE_KEY, null)
 }
 
+/** Persist the current week as the last-good copy (used after live results settle). */
+export function rememberWeek(fixtures: Fixture[], fetchedAt: string): void {
+  writeLastGood(fixtures, fetchedAt)
+}
+
 function writeLastGood(fixtures: Fixture[], fetchedAt: string, now = new Date()): void {
   const cutoff = now.getTime() - CACHE_KEEP_DAYS * 24 * 60 * 60 * 1000
   const kept = fixtures.filter((f) => parseUtc(f.kickoffUtc).getTime() >= cutoff)
