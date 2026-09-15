@@ -2718,3 +2718,7 @@ section[aria-label='Next up'] .featured .badge.owned {
 section[aria-label='Tables'] .league-chips {
   margin-bottom: 10px;
 }
+
+.league-chips.week-filter {
+  margin: -4px -2px 12px;
+}

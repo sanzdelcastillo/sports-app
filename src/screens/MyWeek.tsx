@@ -5,9 +5,10 @@ import { ClubStrip } from '../components/ClubStrip'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, GameCardSkeleton, GameRow } from '../components/GameCard'
 import { TablesView } from '../components/MatchExtras'
+import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
-import type { FixtureChange } from '../domain/types'
+import type { FixtureChange, LeagueId } from '../domain/types'
 import { findConflicts } from '../lib/conflicts'
 import { formatKickoff, relativeLabel, RESULTS_DAYS } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
@@ -67,14 +68,27 @@ export function MyWeek() {
   } = useAppState()
 
   const [view, setView] = useState<'week' | 'results' | 'tables'>('week')
+  const [leagueFilter, setLeagueFilter] = useState<LeagueId | 'all'>('all')
+
+  // Leagues with at least one game in the window, in order of first game.
+  const leaguesThisWeek = useMemo(() => {
+    const seen: LeagueId[] = []
+    for (const f of week.fixtures) if (!seen.includes(f.leagueId)) seen.push(f.leagueId)
+    return seen
+  }, [week.fixtures])
+  const activeFilter = leagueFilter !== 'all' && leaguesThisWeek.includes(leagueFilter) ? leagueFilter : 'all'
+  const focused = useMemo(
+    () => (activeFilter === 'all' ? week.fixtures : week.fixtures.filter((f) => f.leagueId === activeFilter)),
+    [week.fixtures, activeFilter],
+  )
   const { liveNow, featured, upcomingGroups, recentGroups, resultGroups } = useMemo(() => {
-    const live = week.fixtures.filter((f) => f.status === 'live')
-    const upcoming = week.fixtures.filter((f) => f.status !== 'final' && f.status !== 'live')
-    const finals = week.fixtures.filter((f) => f.status === 'final')
+    const live = focused.filter((f) => f.status === 'live')
+    const upcoming = focused.filter((f) => f.status !== 'final' && f.status !== 'live')
+    const finals = focused.filter((f) => f.status === 'final')
     const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000
     const recent = finals.filter((f) => new Date(f.kickoffUtc).getTime() >= twoDaysAgo)
     // Every live game gets the full treatment; the "next up" card is the first game still to come.
-    const featuredGame = upcoming[0] ?? (live.length === 0 ? week.fixtures[0] : undefined)
+    const featuredGame = upcoming[0] ?? (live.length === 0 ? focused[0] : undefined)
     const upcomingRest = upcoming.filter((f) => f.id !== featuredGame?.id)
 
     const groupByDay = (fixtures: typeof upcoming) => {
@@ -95,7 +109,7 @@ export function MyWeek() {
       recentGroups: groupByDay(recent),
       resultGroups: groupByDay([...finals].sort((a, b) => b.kickoffUtc.localeCompare(a.kickoffUtc))),
     }
-  }, [week.fixtures])
+  }, [focused])
 
   const coverage = useMemo(
     () => coverageFor(week.fixtures.filter((f) => f.status !== 'final'), subscribed),
@@ -263,6 +277,32 @@ export function MyWeek() {
                   Tables
                 </button>
               </div>
+
+              {view !== 'tables' && leaguesThisWeek.length > 1 ? (
+                <div className="league-chips week-filter" role="tablist" aria-label="Filter by competition">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeFilter === 'all'}
+                    className={`league-chip${activeFilter === 'all' ? ' on' : ''}`}
+                    onClick={() => setLeagueFilter('all')}
+                  >
+                    All
+                  </button>
+                  {leaguesThisWeek.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeFilter === id}
+                      className={`league-chip${activeFilter === id ? ' on' : ''}`}
+                      onClick={() => setLeagueFilter(id)}
+                    >
+                      {getLeague(id).shortName}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {view === 'tables' ? <TablesView /> : null}
 
