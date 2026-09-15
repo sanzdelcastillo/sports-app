@@ -2626,3 +2626,34 @@ section[aria-label='Next up'] .featured .badge.owned {
   color: var(--pitch-deep);
   border-color: var(--pitch-deep);
 }
+
+/* ---------- Week / Results toggle ---------- */
+
+.view-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: 4px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--paper-hi);
+}
+
+.view-tab {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.view-tab.on {
+  background: var(--pitch-deep);
+  color: var(--paper-hi);
+}

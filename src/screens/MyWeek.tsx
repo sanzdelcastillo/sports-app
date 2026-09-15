@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { ClubStrip } from '../components/ClubStrip'
@@ -8,7 +8,7 @@ import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
 import type { FixtureChange } from '../domain/types'
 import { findConflicts } from '../lib/conflicts'
-import { formatKickoff, relativeLabel } from '../lib/time'
+import { formatKickoff, relativeLabel, RESULTS_DAYS } from '../lib/time'
 import { fixtureById } from '../services/fixtures'
 import { useAppState } from '../stores/AppState'
 
@@ -65,10 +65,13 @@ export function MyWeek() {
     liveFeed,
   } = useAppState()
 
-  const { liveNow, featured, upcomingGroups, recentGroups } = useMemo(() => {
+  const [view, setView] = useState<'week' | 'results'>('week')
+  const { liveNow, featured, upcomingGroups, recentGroups, resultGroups } = useMemo(() => {
     const live = week.fixtures.filter((f) => f.status === 'live')
     const upcoming = week.fixtures.filter((f) => f.status !== 'final' && f.status !== 'live')
-    const recent = week.fixtures.filter((f) => f.status === 'final')
+    const finals = week.fixtures.filter((f) => f.status === 'final')
+    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000
+    const recent = finals.filter((f) => new Date(f.kickoffUtc).getTime() >= twoDaysAgo)
     // Every live game gets the full treatment; the "next up" card is the first game still to come.
     const featuredGame = upcoming[0] ?? (live.length === 0 ? week.fixtures[0] : undefined)
     const upcomingRest = upcoming.filter((f) => f.id !== featuredGame?.id)
@@ -89,6 +92,7 @@ export function MyWeek() {
       featured: featuredGame,
       upcomingGroups: groupByDay(upcomingRest),
       recentGroups: groupByDay(recent),
+      resultGroups: groupByDay([...finals].sort((a, b) => b.kickoffUtc.localeCompare(a.kickoffUtc))),
     }
   }, [week.fixtures])
 
@@ -246,7 +250,33 @@ export function MyWeek() {
             />
           ) : (
             <>
-              {liveNow.length > 0 ? (
+              <div className="view-toggle" role="tablist" aria-label="Week or results">
+                <button type="button" role="tab" aria-selected={view === 'week'} className={`view-tab${view === 'week' ? ' on' : ''}`} onClick={() => setView('week')}>
+                  This week
+                </button>
+                <button type="button" role="tab" aria-selected={view === 'results'} className={`view-tab${view === 'results' ? ' on' : ''}`} onClick={() => setView('results')}>
+                  Results{resultGroups.length ? ` · ${resultGroups.reduce((n, [, fx]) => n + fx.length, 0)}` : ''}
+                </button>
+              </div>
+
+              {view === 'results' ? (
+                <section aria-label="Results">
+                  {resultGroups.length === 0 ? (
+                    <p className="disclaimer">No finished games for what you follow in the last {RESULTS_DAYS} days.</p>
+                  ) : null}
+                  {resultGroups.map(([day, fixtures]) => (
+                    <section key={`res-${day}`}>
+                      <div className="date-head">{day}</div>
+                      {fixtures.map((fixture) => (
+                        <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />
+                      ))}
+                    </section>
+                  ))}
+                  <p className="source-note">Results go back {RESULTS_DAYS} days. Scores follow your Hide scores setting.</p>
+                </section>
+              ) : null}
+
+              {view === 'week' && liveNow.length > 0 ? (
                 <section aria-label="Live now">
                   <div className="date-head live-head">
                     <span className="pulse-dot" aria-hidden="true" />
@@ -257,13 +287,13 @@ export function MyWeek() {
                   ))}
                 </section>
               ) : null}
-              {featured ? (
+              {view === 'week' && featured ? (
                 <section aria-label="Next up">
                   {liveNow.length > 0 ? <div className="date-head">Next up</div> : null}
                   <FeaturedGame fixture={featured} subscribed={subscribed} />
                 </section>
               ) : null}
-              {upcomingGroups.map(([day, fixtures]) => (
+              {view === 'week' && upcomingGroups.map(([day, fixtures]) => (
                 <section key={`up-${day}`}>
                   <div className="date-head">{day}</div>
                   {fixtures.map((fixture) => (
@@ -271,7 +301,7 @@ export function MyWeek() {
                   ))}
                 </section>
               ))}
-              {recentGroups.length > 0 ? (
+              {view === 'week' && recentGroups.length > 0 ? (
                 <>
                   <div className="date-head strong" style={{ marginTop: 22 }}>
                     Earlier this week

@@ -191,7 +191,7 @@ export function mapFixture(f: AfFixture): Fixture | null {
 export async function fetchTeamFixtures(providerId: string): Promise<Fixture[]> {
   const [next, last] = await Promise.all([
     getJson<AfFixture[]>(`${AF}/fixtures?team=${providerId}&next=15`),
-    getJson<AfFixture[]>(`${AF}/fixtures?team=${providerId}&last=3`),
+    getJson<AfFixture[]>(`${AF}/fixtures?team=${providerId}&last=8`),
   ])
   return [...last, ...next].map(mapFixture).filter((f): f is Fixture => f !== null)
 }

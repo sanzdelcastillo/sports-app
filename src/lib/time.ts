@@ -66,7 +66,10 @@ export function formatVenueDate(iso: string, timeZone = DEFAULT_TIME_ZONE): stri
   }).format(parseUtc(iso))
 }
 
-/** Week window: local today through +7 days, plus recent results from the last 2 days. */
+/** How far back results are kept. */
+export const RESULTS_DAYS = 7
+
+/** Week window: local today through +7 days, plus results from the last RESULTS_DAYS days. */
 export function weekWindow(now = new Date(), timeZone = DEFAULT_TIME_ZONE): { start: Date; end: Date } {
   const dateKey = new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -75,7 +78,7 @@ export function weekWindow(now = new Date(), timeZone = DEFAULT_TIME_ZONE): { st
     day: '2-digit',
   }).format(now)
   const start = new Date(`${dateKey}T04:00:00.000Z`)
-  const recent = new Date(start.getTime() - 2 * 24 * 60 * 60 * 1000)
+  const recent = new Date(start.getTime() - RESULTS_DAYS * 24 * 60 * 60 * 1000)
   const end = new Date(start.getTime() + 8 * 24 * 60 * 60 * 1000)
   return { start: recent, end }
 }

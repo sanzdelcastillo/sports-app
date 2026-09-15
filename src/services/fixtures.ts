@@ -147,7 +147,7 @@ export async function loadFollowedWeek(follows: string[], teamsToFetch: string[]
       })
       .filter((t): t is { id: string; providerId: string; kind: 'league' | 'team' } => Boolean(t.providerId))
 
-    const windowStart = new Date(start.getTime() - 3 * 24 * 60 * 60 * 1000)
+    const windowStart = start
     const batches = await Promise.allSettled(
       targets.map((t) =>
         t.kind === 'league'
