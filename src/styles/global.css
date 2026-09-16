@@ -3036,3 +3036,36 @@ section[aria-label='Tables'] .league-chips {
 .career-fine {
   margin-top: 8px;
 }
+
+.career-headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--line-soft, #E6E1D3);
+}
+
+.career-headline-num {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 52px;
+  line-height: 1;
+  color: var(--pitch-deep);
+}
+
+.career-headline-label {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.career-headline-sub {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
