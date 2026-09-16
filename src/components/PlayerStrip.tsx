@@ -39,7 +39,16 @@ export function PlayerStrip() {
             <Link key={p.id} to={`/player/${p.id}`} className={`club-tile player-tile${injured ? ' injured' : ''}`} role="listitem">
               <PlayerFace player={season?.player ?? p} size="sm" />
               <span className="club-abbr">{p.name.split(' ').slice(-1)[0]}</span>
-              <span className="club-when">{t ? `${t.goals}G · ${t.assists}A${t.rating ? ` · ${t.rating}` : ''}` : season === null ? 'No numbers yet' : '…'}</span>
+              {t ? (
+                <span className="club-when player-numbers">
+                  <span>
+                    {t.goals}G · {t.assists}A
+                  </span>
+                  {t.rating ? <span className="player-rating">{t.rating.toFixed(2)} avg</span> : null}
+                </span>
+              ) : (
+                <span className="club-when">{season === null ? 'No numbers yet' : '…'}</span>
+              )}
               {injured ? <span className="player-injured-dot" aria-label="Injured" /> : null}
             </Link>
           )
