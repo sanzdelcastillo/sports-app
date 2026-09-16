@@ -2726,3 +2726,187 @@ section[aria-label='Tables'] .league-chips {
 .search-leagues {
   margin-bottom: 4px;
 }
+
+/* ---------- Players ---------- */
+
+.player-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  flex: none;
+}
+
+.player-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-face.sm {
+  width: 34px;
+  height: 34px;
+}
+
+.player-face.md {
+  width: 44px;
+  height: 44px;
+}
+
+.player-face.lg {
+  width: 72px;
+  height: 72px;
+  border: 2px solid rgba(251, 248, 240, 0.85);
+}
+
+.player-initials {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--pitch-deep);
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.player-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.player-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.squad-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.squad-head .club-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.squad-list {
+  margin-top: 6px;
+  padding-left: 6px;
+}
+
+.player-tile {
+  position: relative;
+}
+
+.player-tile.injured {
+  border-color: var(--red);
+}
+
+.player-injured-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+.player-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.player-hero-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-hero-name {
+  margin: 0 0 4px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.player-hero .toggle {
+  background: transparent;
+  color: var(--paper-hi);
+  border-color: rgba(251, 248, 240, 0.45);
+}
+
+.player-hero .toggle.on {
+  background: var(--amber);
+  color: var(--ink);
+  border-color: var(--amber);
+}
+
+.player-injury {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: var(--r-control);
+  background: rgba(182, 65, 50, 0.25);
+  border: 1px solid rgba(182, 65, 50, 0.7);
+  font-size: 13px;
+}
+
+.player-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(251, 248, 240, 0.2);
+}
+
+.player-stats-strip dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(251, 248, 240, 0.7);
+}
+
+.player-stats-strip dd {
+  margin: 2px 0 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.player-hero-foot {
+  margin-top: 12px;
+}
+
+.player-table td.left {
+  width: auto;
+}
+
+.player-table th:first-child,
+.player-table td:first-child {
+  width: auto;
+  padding-left: 10px;
+}

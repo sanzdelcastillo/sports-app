@@ -17,6 +17,7 @@ import { alertsPermitted, cancelAllAlerts, scheduleKickoffAlerts } from '../nati
 import { isNative } from '../native/platform'
 import { loadFollowedWeek, readLastGood, rememberWeek, seedWeek, staleTeams, type WeekResult } from '../services/fixtures'
 import { fetchFixturesByIds } from '../services/apiFootball'
+import { MAX_PLAYERS, type FollowedPlayer } from '../services/players'
 import { withInferredStatus } from '../lib/status'
 import { anyInPlay, applyLive, fetchLiveSoccer, type LiveUpdate } from '../services/livescores'
 
@@ -30,6 +31,7 @@ const SEEN_KEY = 'sfp.seen.v1'
 const CHANGES_KEY = 'sfp.changes.v1'
 const LATER_KEY = 'sfp.watchLater.v1'
 const PREDICTIONS_KEY = 'sfp.predictions.v1'
+const PLAYERS_KEY = 'sfp.players.v1'
 
 interface AppState {
   follows: string[]
@@ -64,6 +66,12 @@ interface AppState {
   /** Your score call per game, kept locally (the seed of the friends leaderboard later). */
   predictions: Record<string, Prediction>
   setPrediction: (fixtureId: string, prediction: Prediction | null) => void
+  /** Favourite players, capped at MAX_PLAYERS. */
+  players: FollowedPlayer[]
+  isPlayerFollowed: (id: string) => boolean
+  /** Returns false when the cap is reached. */
+  followPlayer: (player: FollowedPlayer) => boolean
+  unfollowPlayer: (id: string) => void
   markWatched: (fixtureId: string) => void
   week: WeekResult
   /** 'on' once the premium livescore feed has answered; 'off' when the proxy has no key. */
@@ -94,6 +102,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   )
   const [watchLater, setWatchLater] = useState<string[]>(() => readJson<string[]>(LATER_KEY, []))
   const [predictions, setPredictions] = useState<Record<string, Prediction>>(() => readJson<Record<string, Prediction>>(PREDICTIONS_KEY, {}))
+  const [players, setPlayers] = useState<FollowedPlayer[]>(() => readJson<FollowedPlayer[]>(PLAYERS_KEY, []))
   const [week, setWeek] = useState<WeekResult>(() => {
     const lastGood = readLastGood()
     return {
@@ -124,6 +133,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(CHANGES_KEY, changes), [changes])
   useEffect(() => writeJson(LATER_KEY, watchLater), [watchLater])
   useEffect(() => writeJson(PREDICTIONS_KEY, predictions), [predictions])
+  useEffect(() => writeJson(PLAYERS_KEY, players), [players])
 
   const refresh = useCallback(async (force = false) => {
     setLoading(true)
@@ -231,6 +241,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const isPlayerFollowed = useCallback((id: string) => players.some((p) => p.id === id), [players])
+  const followPlayer = useCallback(
+    (player: FollowedPlayer) => {
+      if (players.some((p) => p.id === player.id)) return true
+      if (players.length >= MAX_PLAYERS) return false
+      setPlayers((prev) => (prev.length >= MAX_PLAYERS ? prev : [...prev, player]))
+      return true
+    },
+    [players],
+  )
+  const unfollowPlayer = useCallback((id: string) => setPlayers((prev) => prev.filter((p) => p.id !== id)), [])
+
   const toggleHideScores = useCallback(() => setHideScores((prev) => !prev), [])
   const toggleShowCrests = useCallback(() => setShowCrests((prev) => !prev), [])
   const finishOnboarding = useCallback(() => setOnboarded(true), [])
@@ -308,6 +330,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleWatchLater,
       predictions,
       setPrediction,
+      players,
+      isPlayerFollowed,
+      followPlayer,
+      unfollowPlayer,
       markWatched,
       week,
       liveFeed,
@@ -341,6 +367,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleWatchLater,
       predictions,
       setPrediction,
+      players,
+      isPlayerFollowed,
+      followPlayer,
+      unfollowPlayer,
       markWatched,
       week,
       liveFeed,

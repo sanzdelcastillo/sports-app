@@ -5,6 +5,7 @@ import { ClubStrip } from '../components/ClubStrip'
 import { EmptyState } from '../components/EmptyState'
 import { FeaturedGame, GameCardSkeleton, GameRow } from '../components/GameCard'
 import { TablesView } from '../components/MatchExtras'
+import { PlayerStrip } from '../components/PlayerStrip'
 import { getLeague } from '../data/leagues'
 import { getTeam } from '../data/teams'
 import { coverageFor } from '../data/watch'
@@ -226,6 +227,8 @@ export function MyWeek() {
           <ClubStrip follows={follows} fixtures={week.fixtures} subscribed={subscribed} />
         </section>
       ) : null}
+
+      <PlayerStrip />
 
       {laterFixtures.length > 0 ? (
         <section aria-label="Catch up later">

@@ -22,6 +22,8 @@ import { parseRss } from '../api/news.js'
 import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 import { gameShareText } from '../src/lib/shareGame'
+import { mapPlayerSeason, totals } from '../src/services/players'
+import { playerKeywords } from '../src/screens/Player'
 
 let failures = 0
 function expect(condition: boolean, message: string) {
@@ -236,6 +238,23 @@ expect(inferStatus(yesterday) === 'final', 'a live game from yesterday is never 
 expect(inferStatus({ ...yesterday, kickoffUtc: new Date(Date.now() - 60 * 60 * 1000).toISOString() }) === 'live', 'a live game from an hour ago still is')
 expect(liveClockLabel(yesterday).text === "90'" && !liveClockLabel(yesterday).running, 'clock holds the last minute when the source goes quiet')
 expect(liveClockLabel({ ...liveFx, liveMinute: 90, livePeriod: '2H', liveMinuteAt: new Date(Date.now() - 14 * 60_000).toISOString() }).text === "90+14'", 'added time is shown up to a sensible cap')
+
+console.log('Players')
+const saka = mapPlayerSeason({
+  player: { id: 1460, name: 'B. Saka', firstname: 'Bukayo', lastname: 'Saka', age: 25, nationality: 'England', position: 'Midfielder', number: 7, photo: null, injured: false },
+  statistics: [
+    { team: { id: 10, name: 'England' }, league: { id: 1, name: 'World Cup' }, games: { appearences: 7, minutes: 357, rating: '7.33' }, shots: { total: 10, on: 7 }, goals: { total: 3, assists: 3 }, passes: { key: 8 }, dribbles: { success: 7 }, cards: { yellow: 0, red: 0 } },
+    { team: { id: 42, name: 'Arsenal' }, league: { id: 39, name: 'Premier League' }, games: { appearences: 4, minutes: 337, rating: '7.49' }, shots: { total: 10, on: 8 }, goals: { total: 3, assists: 0 }, passes: { key: 4 }, dribbles: { success: 4 }, cards: { yellow: 0, red: 0 } },
+    { team: { id: 42, name: 'Arsenal' }, league: { id: 2, name: 'UEFA Champions League' }, games: { appearences: 1, minutes: 73, rating: '6.64' }, shots: { total: 6, on: 1 }, goals: { total: 0, assists: 0 }, passes: { key: 1 }, dribbles: { success: 2 }, cards: { yellow: 0, red: 0 } },
+    { team: { id: 42, name: 'Arsenal' }, league: { id: 999, name: 'Reserve' }, games: { appearences: 0, minutes: 0, rating: null }, shots: { total: null, on: null }, goals: { total: null, assists: null }, passes: { key: null }, dribbles: { success: null }, cards: { yellow: null, red: null } },
+  ],
+} as never, 2026)
+expect(saka.rows.length === 3 && saka.player.teamName === 'Arsenal' && saka.player.fullName === 'Bukayo Saka', 'season mapped; club is the club with most minutes; empty rows dropped')
+const clubTotals = totals(saka.rows, true)
+expect(clubTotals.apps === 5 && clubTotals.goals === 3 && clubTotals.rating === 7.32, 'club-only totals with minutes-weighted rating')
+expect(totals(saka.rows).goals === 6 && totals(saka.rows).assists === 3, 'all-competition totals include the national team')
+expect(playerKeywords('B. Saka', 'Bukayo Saka').includes('bukayo saka') && !playerKeywords('D. Silva').includes('silva'), 'news keywords: full name always, short surnames never')
+expect(followKeywords([], [{ name: 'E. Haaland', fullName: 'Erling Haaland' }]).includes('erling haaland'), 'followed players feed the news filter')
 
 console.log('Share this game')
 const shareTxt = gameShareText(epl, ['peacock'], { home: 2, away: 1 })

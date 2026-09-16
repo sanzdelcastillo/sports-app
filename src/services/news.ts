@@ -32,9 +32,15 @@ export async function fetchHeadlines(force = false): Promise<NewsPayload> {
   return data
 }
 
-/** Words that mark a headline as being about something the user follows. */
-export function followKeywords(follows: string[]): string[] {
+/** Words that mark a headline as being about something the user follows (clubs, competitions, players). */
+export function followKeywords(follows: string[], players: { name: string; fullName?: string }[] = []): string[] {
   const words: string[] = []
+  for (const p of players) {
+    if (p.fullName) words.push(p.fullName)
+    const parts = p.name.replace(/\./g, '').split(/\s+/).filter(Boolean)
+    const surname = parts[parts.length - 1]
+    if (surname && surname.length >= 6) words.push(surname)
+  }
   for (const id of follows) {
     const league = leagueIdFromFollow(id)
     if (league) {

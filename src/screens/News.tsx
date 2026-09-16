@@ -35,7 +35,7 @@ function HeadlineRow({ h }: { h: Headline }) {
 }
 
 export function News() {
-  const { follows } = useAppState()
+  const { follows, players } = useAppState()
   const [items, setItems] = useState<Headline[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'mine' | 'all'>('mine')
@@ -54,7 +54,7 @@ export function News() {
     }
   }, [])
 
-  const keywords = useMemo(() => followKeywords(follows), [follows])
+  const keywords = useMemo(() => followKeywords(follows, players), [follows, players])
   const mine = useMemo(() => (items ?? []).filter((h) => isForYou(h, keywords)), [items, keywords])
   const shown = tab === 'mine' ? mine : (items ?? [])
 
