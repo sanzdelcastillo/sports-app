@@ -35,6 +35,13 @@ export interface PlayerCompetitionStats {
   dribbles: number
   yellow: number
   red: number
+  /** The source only records assists for recent seasons; false means "unknown", not zero. */
+  assistsKnown: boolean
+  penScored: number
+  penMissed: number
+  /** Goalkeepers */
+  conceded: number
+  saves: number
   isNationalTeam: boolean
 }
 
@@ -73,10 +80,11 @@ interface RawStatBlock {
   league: { id: number | null; name: string | null; logo?: string | null; season?: number | null }
   games: { appearences: number | null; minutes: number | null; rating: string | null; position?: string | null }
   shots: { total: number | null; on: number | null }
-  goals: { total: number | null; assists: number | null }
+  goals: { total: number | null; assists: number | null; conceded?: number | null; saves?: number | null }
   passes: { key: number | null }
   dribbles: { success: number | null }
   cards: { yellow: number | null; red: number | null }
+  penalty?: { scored: number | null; missed: number | null }
 }
 
 interface RawPlayerStats extends RawProfile {
@@ -155,6 +163,11 @@ export function mapPlayerSeason(raw: RawPlayerStats, season: number): PlayerSeas
       dribbles: s.dribbles.success ?? 0,
       yellow: s.cards.yellow ?? 0,
       red: s.cards.red ?? 0,
+      assistsKnown: s.goals.assists !== null && s.goals.assists !== undefined,
+      penScored: s.penalty?.scored ?? 0,
+      penMissed: s.penalty?.missed ?? 0,
+      conceded: s.goals.conceded ?? 0,
+      saves: s.goals.saves ?? 0,
       isNationalTeam: NATIONAL_HINT.test(s.team.name),
     }))
     .sort((a, b) => b.minutes - a.minutes)
@@ -187,7 +200,8 @@ export function totals(rows: PlayerCompetitionStats[], clubOnly = false): { apps
 export async function fetchPlayerSeason(playerId: string, season = seasonGuess()): Promise<PlayerSeason | null> {
   const key = `sfp.player.${playerId}.${season}`
   const cached = readJson<PlayerSeason | null>(key, null)
-  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < STATS_TTL_MS) return cached
+  const ttl = season < seasonGuess() ? 30 * 24 * 60 * 60 * 1000 : STATS_TTL_MS
+  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < ttl) return cached
   const rows = await getJson<RawPlayerStats[]>(`${AF}/players?id=${playerId}&season=${season}`)
   if (!rows[0]) return cached
   const out = mapPlayerSeason(rows[0], season)
@@ -257,4 +271,79 @@ export async function fetchCareer(playerId: string): Promise<Career> {
   }
   writeJson(key, career)
   return career
+}
+
+/* ---------- career totals ---------- */
+
+export interface CareerSide {
+  apps: number
+  goals: number
+  assists: number
+  minutes: number
+  yellow: number
+  red: number
+  penScored: number
+  penMissed: number
+  conceded: number
+  saves: number
+}
+
+export interface CareerTotals {
+  club: CareerSide
+  country: CareerSide
+  /** First season the source has any games for. */
+  since: number | null
+  /** First season with assists recorded — totals before this are unknown, not zero. */
+  assistsSince: number | null
+  seasonsCounted: number
+  fetchedAt: string
+}
+
+const CAREER_TOTALS_TTL_MS = 24 * 60 * 60 * 1000
+const FRIENDLY = /friendl|emirates cup|florida cup|pre-season|preseason|summer series|all-star|audi cup|international champions cup|premier league asia|joan gamper|gamper|super match|dubai|trofeo|uhrencup|telekom cup|invitational|mls all/i
+
+function emptySide(): CareerSide {
+  return { apps: 0, goals: 0, assists: 0, minutes: 0, yellow: 0, red: 0, penScored: 0, penMissed: 0, conceded: 0, saves: 0 }
+}
+
+function addRow(side: CareerSide, r: PlayerCompetitionStats): void {
+  side.apps += r.apps
+  side.goals += r.goals
+  side.assists += r.assistsKnown ? r.assists : 0
+  side.minutes += r.minutes
+  side.yellow += r.yellow
+  side.red += r.red
+  side.penScored += r.penScored
+  side.penMissed += r.penMissed
+  side.conceded += r.conceded
+  side.saves += r.saves
+}
+
+export function sumCareer(seasons: PlayerSeason[]): Omit<CareerTotals, 'fetchedAt'> {
+  const club = emptySide()
+  const country = emptySide()
+  let since: number | null = null
+  let assistsSince: number | null = null
+  for (const s of seasons) {
+    if (s.rows.length === 0) continue
+    since = since === null ? s.season : Math.min(since, s.season)
+    if (s.rows.some((r) => r.assistsKnown)) assistsSince = assistsSince === null ? s.season : Math.min(assistsSince, s.season)
+    for (const r of s.rows) {
+      // Club friendlies don't count as career games; international friendlies are caps.
+      if (!r.isNationalTeam && FRIENDLY.test(r.league)) continue
+      addRow(r.isNationalTeam ? country : club, r)
+    }
+  }
+  return { club, country, since, assistsSince, seasonsCounted: seasons.filter((s) => s.rows.length > 0).length }
+}
+
+/** Every season the source has, added up. One request per season the first time; cached a day. */
+export async function fetchCareerTotals(playerId: string, seasons: number[]): Promise<CareerTotals> {
+  const key = `sfp.careerTotals.${playerId}`
+  const cached = readJson<CareerTotals | null>(key, null)
+  if (cached && cached.seasonsCounted > 0 && Date.now() - new Date(cached.fetchedAt).getTime() < CAREER_TOTALS_TTL_MS) return cached
+  const all = await Promise.all(seasons.map((y) => fetchPlayerSeason(playerId, y).catch(() => null)))
+  const totalsOut: CareerTotals = { ...sumCareer(all.filter((s): s is PlayerSeason => s !== null)), fetchedAt: new Date().toISOString() }
+  writeJson(key, totalsOut)
+  return totalsOut
 }

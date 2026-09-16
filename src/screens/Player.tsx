@@ -7,7 +7,7 @@ import { PlayerFace } from '../components/PlayerFace'
 import { teamByProviderId } from '../data/teams'
 import { openExternal } from '../native/external'
 import { fetchHeadlines, isForYou, type Headline } from '../services/news'
-import { fetchCareer, fetchPlayerInjuries, fetchPlayerSeason, totals, type Career, type PlayerInjury, type PlayerSeason } from '../services/players'
+import { fetchCareer, fetchCareerTotals, fetchPlayerInjuries, fetchPlayerSeason, totals, type Career, type CareerTotals, type PlayerInjury, type PlayerSeason } from '../services/players'
 import { seasonGuess } from '../services/apiFootball'
 import { useAppState } from '../stores/AppState'
 
@@ -30,6 +30,37 @@ export function playerKeywords(name: string, fullName?: string): string[] {
   return [...new Set(words)]
 }
 
+function CareerBlock({ label, side, keeper, caps = false }: { label: string; side: CareerTotals['club']; keeper: boolean; caps?: boolean }) {
+  const perGame = side.apps > 0 ? (side.goals / side.apps).toFixed(2) : '—'
+  return (
+    <div className="career-block">
+      <div className="career-block-label mono-label">{label}</div>
+      <dl className="career-totals">
+        <div>
+          <dt>{caps ? 'Caps' : 'Games'}</dt>
+          <dd>{side.apps.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Goals</dt>
+          <dd>{side.goals.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Assists</dt>
+          <dd>{side.assists.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>{keeper ? 'Conceded' : 'Per game'}</dt>
+          <dd>{keeper ? side.conceded.toLocaleString() : perGame}</dd>
+        </div>
+      </dl>
+      <div className="career-fine mono-label">
+        {Math.round(side.minutes).toLocaleString()} min · pens {side.penScored}/{side.penScored + side.penMissed} · {side.yellow}Y {side.red}R
+        {keeper ? ` · ${side.saves.toLocaleString()} saves` : ''}
+      </div>
+    </div>
+  )
+}
+
 export function Player() {
   const { id } = useParams<{ id: string }>()
   const { players, week, subscribed, isPlayerFollowed, followPlayer, unfollowPlayer, hideScores } = useAppState()
@@ -37,6 +68,7 @@ export function Player() {
   const [season, setSeason] = useState<PlayerSeason | null>(null)
   const [seasonYear, setSeasonYear] = useState<number>(seasonGuess())
   const [career, setCareer] = useState<Career | null>(null)
+  const [careerTotals, setCareerTotals] = useState<CareerTotals | null>(null)
   const [injuries, setInjuries] = useState<PlayerInjury[]>([])
   const [news, setNews] = useState<Headline[] | null>(null)
   const [error, setError] = useState(false)
@@ -62,9 +94,14 @@ export function Player() {
     if (!id) return
     let cancelled = false
     setCareer(null)
+    setCareerTotals(null)
     fetchCareer(id)
       .then((c) => {
-        if (!cancelled) setCareer(c)
+        if (cancelled) return
+        setCareer(c)
+        return fetchCareerTotals(id, c.seasons).then((t) => {
+          if (!cancelled) setCareerTotals(t)
+        })
       })
       .catch(() => undefined)
     fetchPlayerInjuries(id)
@@ -83,6 +120,7 @@ export function Player() {
   }, [id])
 
   const player = season?.player ?? known
+  const isKeeper = /goalkeeper/i.test(player?.position ?? '')
   const keywords = useMemo(() => (player ? playerKeywords(player.name, player.fullName) : []), [player])
   const about = useMemo(() => (news ?? []).filter((h) => isForYou(h, keywords)).slice(0, 8), [news, keywords])
   const clubTeam = player?.teamProviderId ? teamByProviderId(player.teamProviderId) : undefined
@@ -219,6 +257,18 @@ export function Player() {
       {career && career.clubs.length > 0 ? (
         <section className="card">
           <h2 className="display-head">Career</h2>
+          {!careerTotals ? <p className="disclaimer">Adding up {career.seasons.length} seasons…</p> : null}
+          {careerTotals && careerTotals.seasonsCounted > 0 ? (
+            <>
+              <CareerBlock label={player?.teamName ? 'Club career' : 'Club'} side={careerTotals.club} keeper={isKeeper} />
+              {careerTotals.country.apps > 0 ? <CareerBlock label="National team" side={careerTotals.country} keeper={isKeeper} caps /> : null}
+              <p className="source-note">
+                Since {careerTotals.since}, {careerTotals.seasonsCounted} seasons on record
+                {careerTotals.assistsSince && careerTotals.since !== null && careerTotals.assistsSince > careerTotals.since ? ` · assists counted from ${careerTotals.assistsSince}` : ''}.
+              </p>
+            </>
+          ) : null}
+          <div className="date-head">Clubs</div>
           <ul className="career-list">
             {career.clubs.map((c) => (
               <li key={c.teamProviderId} className="career-row">

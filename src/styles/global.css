@@ -2999,3 +2999,40 @@ section[aria-label='Tables'] .league-chips {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- Career totals ---------- */
+
+.career-block {
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--line-soft, #E6E1D3);
+  margin-bottom: 6px;
+}
+
+.career-block-label {
+  margin-bottom: 6px;
+}
+
+.career-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.career-totals dt {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.career-totals dd {
+  margin: 2px 0 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.career-fine {
+  margin-top: 8px;
+}

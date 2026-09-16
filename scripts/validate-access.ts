@@ -22,7 +22,7 @@ import { parseRss } from '../api/news.js'
 import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 import { gameShareText } from '../src/lib/shareGame'
-import { mapPlayerSeason, totals } from '../src/services/players'
+import { mapPlayerSeason, sumCareer, totals, type PlayerCompetitionStats } from '../src/services/players'
 import { playerKeywords } from '../src/screens/Player'
 
 let failures = 0
@@ -255,6 +255,16 @@ expect(clubTotals.apps === 5 && clubTotals.goals === 3 && clubTotals.rating === 
 expect(totals(saka.rows).goals === 6 && totals(saka.rows).assists === 3, 'all-competition totals include the national team')
 expect(playerKeywords('B. Saka', 'Bukayo Saka').includes('bukayo saka') && !playerKeywords('D. Silva').includes('silva'), 'news keywords: full name always, short surnames never')
 expect(followKeywords([], [{ name: 'E. Haaland', fullName: 'Erling Haaland' }]).includes('erling haaland'), 'followed players feed the news filter')
+
+console.log('Career totals')
+const mk = (season: number, rows: Partial<PlayerCompetitionStats>[]) => ({ player: { id: '154', name: 'L. Messi' }, season, fetchedAt: '', rows: rows.map((r) => ({ team: 'X', teamProviderId: '1', league: 'L', apps: 0, minutes: 0, rating: null, goals: 0, assists: 0, shots: 0, shotsOn: 0, keyPasses: 0, dribbles: 0, yellow: 0, red: 0, assistsKnown: true, penScored: 0, penMissed: 0, conceded: 0, saves: 0, isNationalTeam: false, ...r })) })
+const summed = sumCareer([
+  mk(2005, [{ league: 'La Liga', apps: 17, goals: 6, assistsKnown: false }, { league: 'Friendlies Clubs', apps: 5, goals: 4 }]),
+  mk(2024, [{ league: 'MLS', apps: 22, goals: 21, assists: 11, penScored: 1 }, { league: 'Friendlies', apps: 4, goals: 2, isNationalTeam: true, team: 'Argentina' }]),
+])
+expect(summed.club.apps === 39 && summed.club.goals === 27 && summed.club.assists === 11, 'club totals skip club friendlies; unknown assists do not count as zero')
+expect(summed.country.apps === 4 && summed.country.goals === 2, 'international friendlies count as caps')
+expect(summed.since === 2005 && summed.assistsSince === 2024 && summed.seasonsCounted === 2, 'coverage years reported honestly')
 
 console.log('Share this game')
 const shareTxt = gameShareText(epl, ['peacock'], { home: 2, away: 1 })

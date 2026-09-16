@@ -35,6 +35,7 @@ Working order. Each item moves to "Done" with the date when it ships.
 - [ ] Spanish-language UI
 
 ## Done
+- 2026-09-15 — Player pages: career totals (club vs national team: games, goals, assists, per game, minutes, penalties, cards; keeper conceded/saves), every past season, clubs with years, honours
 - 2026-09-15 — Favourite players (cap 10): search or pick from your clubs' squads; season stats by competition with ratings, injury status, club's next games, headlines; strip on My Week
 - 2026-09-15 — Results (last 7 days) and Tables (every competition you follow, your clubs highlighted) views on My Week; ended games settle to final results automatically
 - 2026-09-14 — Share this game: card + text into any chat with your score call; guest game links open for anyone in their own time zone
