@@ -1,6 +1,6 @@
 /** Players: search, squads, season statistics and injuries from API-Football. */
 import { readJson, writeJson } from '../lib/storage'
-import { AF, getJson, PLAYER_PHOTO, seasonGuess } from './apiFootball'
+import { AF, API_ORIGIN, getJson, PLAYER_PHOTO, seasonGuess } from './apiFootball'
 
 export const MAX_PLAYERS = 10
 
@@ -345,4 +345,54 @@ export async function fetchCareerTotals(playerId: string, seasons: number[]): Pr
   const totalsOut: CareerTotals = { ...sumCareer(all.filter((s): s is PlayerSeason => s !== null)), fetchedAt: new Date().toISOString() }
   writeJson(key, totalsOut)
   return totalsOut
+}
+
+/* ---------- career totals from Wikipedia (what Google shows) ---------- */
+
+export interface WikiCareer {
+  title: string
+  url: string
+  clubApps: number | null
+  clubGoals: number | null
+  intlApps: number | null
+  intlGoals: number | null
+  clubUpdated: string | null
+  intlUpdated: string | null
+}
+
+const WIKI_TTL_MS = 12 * 60 * 60 * 1000
+
+/** Name candidates the article is likely titled by: full name, first + last, as displayed. */
+export function wikiNameCandidates(p: { name: string; fullName?: string }): string[] {
+  const out: string[] = []
+  const full = (p.fullName ?? '').trim()
+  const shown = p.name.replace(/\./g, '').trim()
+  const shownParts = shown.split(/\s+/)
+  const shownLast = shownParts[shownParts.length - 1]
+  const firstWord = full ? full.split(/\s+/)[0] : ''
+  // "Lionel" + "Messi" (from "L. Messi") is the title fans and Wikipedia use; Spanish second surnames are dropped.
+  if (firstWord && shownLast && shownLast.length > 1) out.push(`${firstWord} ${shownLast}`)
+  if (!/^[A-Z] /.test(shown) && shownParts.length >= 2) out.push(shown)
+  if (full) {
+    const parts = full.split(/\s+/)
+    if (parts.length > 2) out.push(`${parts[0]} ${parts[parts.length - 2]}`, `${parts[0]} ${parts[parts.length - 1]}`)
+    out.push(full)
+  }
+  return [...new Set(out)].filter(Boolean).slice(0, 4)
+}
+
+export async function fetchWikiCareer(p: { id: string; name: string; fullName?: string; birthDate?: string; teamName?: string }): Promise<WikiCareer | null> {
+  const key = `sfp.wikiCareer.${p.id}`
+  const cached = readJson<{ result: WikiCareer | null; fetchedAt: string } | null>(key, null)
+  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < WIKI_TTL_MS) return cached.result
+  const names = wikiNameCandidates(p)
+  if (!names.length) return null
+  const params = new URLSearchParams({ names: names.join('|') })
+  if (p.birthDate) params.set('birth', p.birthDate)
+  if (p.teamName) params.set('club', p.teamName)
+  const res = await fetch(`${API_ORIGIN}/api/career?${params}`)
+  if (!res.ok) return cached?.result ?? null
+  const data = (await res.json()) as { result: WikiCareer | null }
+  writeJson(key, { result: data.result, fetchedAt: new Date().toISOString() })
+  return data.result
 }

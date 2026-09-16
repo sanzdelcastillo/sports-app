@@ -22,7 +22,7 @@ import { parseRss } from '../api/news.js'
 import { getTeam } from '../src/data/teams'
 import { decodeSetup, encodeSetup } from '../src/lib/setupCode'
 import { gameShareText } from '../src/lib/shareGame'
-import { mapPlayerSeason, sumCareer, totals, type PlayerCompetitionStats } from '../src/services/players'
+import { mapPlayerSeason, sumCareer, totals, wikiNameCandidates, type PlayerCompetitionStats } from '../src/services/players'
 import { playerKeywords } from '../src/screens/Player'
 
 let failures = 0
@@ -265,6 +265,11 @@ const summed = sumCareer([
 expect(summed.club.apps === 39 && summed.club.goals === 27 && summed.club.assists === 11, 'club totals skip club friendlies; unknown assists do not count as zero')
 expect(summed.country.apps === 4 && summed.country.goals === 2, 'international friendlies count as caps')
 expect(summed.since === 2005 && summed.assistsSince === 2024 && summed.seasonsCounted === 2, 'coverage years reported honestly')
+
+console.log('Wikipedia name candidates')
+expect(wikiNameCandidates({ name: 'L. Messi', fullName: 'Lionel Andrés Messi Cuccittini' })[0] === 'Lionel Messi', 'initial + surname expands to the common name')
+expect(wikiNameCandidates({ name: 'Lamine Yamal', fullName: 'Lamine Yamal Nasraoui Ebana' })[0] === 'Lamine Yamal', 'display name kept when it is already a full name')
+expect(wikiNameCandidates({ name: 'B. Saka', fullName: 'Bukayo Ayoyinka Temidayo Saka' })[0] === 'Bukayo Saka', 'middle names dropped')
 
 console.log('Share this game')
 const shareTxt = gameShareText(epl, ['peacock'], { home: 2, away: 1 })

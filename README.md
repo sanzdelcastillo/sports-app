@@ -80,6 +80,8 @@ Native-only behaviour lives in `src/native/`: kickoff alerts via local notificat
 
 All match data comes from API-Football v3 through `api/football.js`, which injects `APIFOOTBALL_KEY` server-side and edge-caches per endpoint. `src/services/apiFootball.ts` is the adapter: fixtures (per club via next/last, per competition via season + date window), live (`fixtures?live=all`, one call for everything in play), lineups with grid positions, events, statistics, standings, clubs per league, world-wide club search, and the ~1,200-league directory with country and current season. Provider ids are stored as `providerId` on clubs and leagues; the 33 core clubs and ~40 mapped competitions carry theirs in `src/data`. Coverage is deepest in the major leagues; lower tiers may lack lineups or events, and the UI says so.
 
+Career games/goals on player pages come from Wikipedia's career-statistics tables via `api/career.js` (parsed from wikitext: club "Career total" row, senior international "Total" row; birth date checked to pick the right person; cached 6h). Provider data fills assists, minutes, penalties, cards and the per-season table.
+
 Highlights are a YouTube search link (no provider offers licensed clips). Where-to-watch remains the hand-maintained U.S. rights map.
 
 ## Data freshness and limits

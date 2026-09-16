@@ -30,12 +30,12 @@ Working order. Each item moves to "Done" with the date when it ships.
 ## Later
 - [ ] Lock-screen Live Activities and home-screen widgets (native, Swift/Kotlin)
 - [ ] Accounts + sync across devices (replaces the setup code)
-- [ ] Complete career totals (provider misses Supercopa de España, some Copa del Rey / Leagues Cup seasons); needs a fuller data source — Opta/Stats Perform tier — or provider fixes. Reported to API-Football Sep 2026
 - [ ] xG momentum, text commentary — only with a paid data tier once revenue justifies it
 - [ ] Head-to-head and form on the game page
 - [ ] Spanish-language UI
 
 ## Done
+- 2026-09-15 — Career games and goals from Wikipedia's career-statistics tables (every competition, updated after each game — the numbers Google shows); provider data for assists/minutes/cards and the season breakdown
 - 2026-09-15 — Player pages: career totals (club vs national team: games, goals, assists, per game, minutes, penalties, cards; keeper conceded/saves), every past season, clubs with years, honours
 - 2026-09-15 — Favourite players (cap 10): search or pick from your clubs' squads; season stats by competition with ratings, injury status, club's next games, headlines; strip on My Week
 - 2026-09-15 — Results (last 7 days) and Tables (every competition you follow, your clubs highlighted) views on My Week; ended games settle to final results automatically

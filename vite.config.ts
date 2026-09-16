@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -10,7 +12,7 @@ import react from '@vitejs/plugin-react'
 function newsDevMiddleware(): Plugin {
   const handle = async (req: IncomingMessage, res: ServerResponse, file: string) => {
     try {
-      const mod = (await import(file)) as { default: (req: unknown, res: unknown) => Promise<void> | void }
+      const mod = (await import(pathToFileURL(path.resolve(process.cwd(), file)).href)) as { default: (req: unknown, res: unknown) => Promise<void> | void }
       const shim = {
         setHeader: (k: string, v: string) => res.setHeader(k, v),
         status: (code: number) => {
@@ -32,10 +34,12 @@ function newsDevMiddleware(): Plugin {
     configureServer(server) {
       server.middlewares.use('/api/news', (req, res) => void handle(req, res, './api/news.js'))
       server.middlewares.use('/api/ics', (req, res) => void handle(req, res, './api/ics.js'))
+      server.middlewares.use('/api/career', (req, res) => void handle(req, res, './api/career.js'))
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/news', (req, res) => void handle(req, res, './api/news.js'))
       server.middlewares.use('/api/ics', (req, res) => void handle(req, res, './api/ics.js'))
+      server.middlewares.use('/api/career', (req, res) => void handle(req, res, './api/career.js'))
     },
   }
 }

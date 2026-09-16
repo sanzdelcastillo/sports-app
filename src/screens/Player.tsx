@@ -7,7 +7,7 @@ import { PlayerFace } from '../components/PlayerFace'
 import { teamByProviderId } from '../data/teams'
 import { openExternal } from '../native/external'
 import { fetchHeadlines, isForYou, type Headline } from '../services/news'
-import { fetchCareer, fetchCareerTotals, fetchPlayerInjuries, fetchPlayerSeason, totals, type Career, type CareerTotals, type PlayerInjury, type PlayerSeason } from '../services/players'
+import { fetchCareer, fetchCareerTotals, fetchPlayerInjuries, fetchPlayerSeason, fetchWikiCareer, totals, type Career, type CareerTotals, type PlayerInjury, type PlayerSeason, type WikiCareer } from '../services/players'
 import { seasonGuess } from '../services/apiFootball'
 import { useAppState } from '../stores/AppState'
 
@@ -69,6 +69,7 @@ export function Player() {
   const [seasonYear, setSeasonYear] = useState<number>(seasonGuess())
   const [career, setCareer] = useState<Career | null>(null)
   const [careerTotals, setCareerTotals] = useState<CareerTotals | null>(null)
+  const [wiki, setWiki] = useState<WikiCareer | null | undefined>(undefined)
   const [injuries, setInjuries] = useState<PlayerInjury[]>([])
   const [news, setNews] = useState<Headline[] | null>(null)
   const [error, setError] = useState(false)
@@ -121,6 +122,24 @@ export function Player() {
 
   const player = season?.player ?? known
   const isKeeper = /goalkeeper/i.test(player?.position ?? '')
+
+  // Career totals as fans know them: Wikipedia's career-statistics tables (every competition, updated after each game).
+  useEffect(() => {
+    if (!id || wiki !== undefined) return
+    const p = season?.player
+    if (!p) return
+    let cancelled = false
+    fetchWikiCareer({ id, name: p.name, fullName: p.fullName, birthDate: p.birthDate, teamName: p.teamName })
+      .then((w) => {
+        if (!cancelled) setWiki(w)
+      })
+      .catch(() => {
+        if (!cancelled) setWiki(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, season, wiki])
   const keywords = useMemo(() => (player ? playerKeywords(player.name, player.fullName) : []), [player])
   const about = useMemo(() => (news ?? []).filter((h) => isForYou(h, keywords)).slice(0, 8), [news, keywords])
   const clubTeam = player?.teamProviderId ? teamByProviderId(player.teamProviderId) : undefined
@@ -260,22 +279,43 @@ export function Player() {
           {!careerTotals ? <p className="disclaimer">Adding up {career.seasons.length} seasons…</p> : null}
           {careerTotals && careerTotals.seasonsCounted > 0 ? (
             <>
-              <div className="career-headline">
-                <span className="career-headline-num">{(careerTotals.club.goals + careerTotals.country.goals).toLocaleString()}</span>
-                <span className="career-headline-label">
-                  goals on record
-                  <span className="career-headline-sub">
-                    {(careerTotals.club.apps + careerTotals.country.apps).toLocaleString()} games · {(careerTotals.club.assists + careerTotals.country.assists).toLocaleString()} assists · club + country
-                  </span>
-                </span>
-              </div>
-              <CareerBlock label={player?.teamName ? 'Club career' : 'Club'} side={careerTotals.club} keeper={isKeeper} />
-              {careerTotals.country.apps > 0 ? <CareerBlock label="National team" side={careerTotals.country} keeper={isKeeper} caps /> : null}
-              <p className="source-note">
-                Since {careerTotals.since}, {careerTotals.seasonsCounted} seasons on record
-                {careerTotals.assistsSince && careerTotals.since !== null && careerTotals.assistsSince > careerTotals.since ? ` · assists counted from ${careerTotals.assistsSince}` : ''}. Competitive games only
-                (no club friendlies). Our data source is missing some cup competitions — Supercopa, some Copa del Rey and Leagues Cup seasons — so official career tallies can be higher than the number on record here.
-              </p>
+              {(() => {
+                const w = wiki ?? null
+                const clubGoals = w?.clubGoals ?? careerTotals.club.goals
+                const clubApps = w?.clubApps ?? careerTotals.club.apps
+                const intlGoals = w?.intlGoals ?? careerTotals.country.goals
+                const intlApps = w?.intlApps ?? careerTotals.country.apps
+                const clubSide = { ...careerTotals.club, goals: clubGoals, apps: clubApps }
+                const countrySide = { ...careerTotals.country, goals: intlGoals, apps: intlApps }
+                const updated = w?.clubUpdated?.replace(/^\d{1,2}:\d{2}, /, '').replace(/ \(UTC\)$/, '')
+                return (
+                  <>
+                    <div className="career-headline">
+                      <span className="career-headline-num">{(clubGoals + intlGoals).toLocaleString()}</span>
+                      <span className="career-headline-label">
+                        career goals
+                        <span className="career-headline-sub">
+                          {(clubApps + intlApps).toLocaleString()} games · {clubGoals.toLocaleString()} club + {intlGoals.toLocaleString()} country
+                        </span>
+                      </span>
+                    </div>
+                    <CareerBlock label="Club career" side={clubSide} keeper={isKeeper} />
+                    {countrySide.apps > 0 ? <CareerBlock label="National team" side={countrySide} keeper={isKeeper} caps /> : null}
+                    <p className="source-note">
+                      {w ? (
+                        <>
+                          Games and goals: Wikipedia{updated ? `, updated ${updated}` : ''} — every competition, senior national team only. Assists, minutes, penalties and cards from our match data since{' '}
+                          {careerTotals.assistsSince ?? careerTotals.since}.
+                        </>
+                      ) : (
+                        <>
+                          From our match data since {careerTotals.since} ({careerTotals.seasonsCounted} seasons), competitive games only. Official tallies can run higher where older cups are missing.
+                        </>
+                      )}
+                    </p>
+                  </>
+                )
+              })()}
             </>
           ) : null}
           <div className="date-head">Clubs</div>
