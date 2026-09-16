@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getTeam } from '../data/teams'
 import type { Team } from '../domain/types'
 import { fetchSquad, MAX_PLAYERS, searchPlayers, type FollowedPlayer } from '../services/players'
@@ -26,8 +27,17 @@ function FollowButton({ player }: { player: FollowedPlayer }) {
 }
 
 function PlayerRow({ player, showTeam = true }: { player: FollowedPlayer; showTeam?: boolean }) {
+  const navigate = useNavigate()
   return (
-    <div className="card player-row">
+    <div
+      className="card player-row tappable"
+      role="link"
+      tabIndex={0}
+      onClick={() => navigate(`/player/${player.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') navigate(`/player/${player.id}`)
+      }}
+    >
       <PlayerFace player={player} size="md" />
       <span className="player-meta">
         <span className="player-name">{player.name}</span>
@@ -35,7 +45,9 @@ function PlayerRow({ player, showTeam = true }: { player: FollowedPlayer; showTe
           {[player.position, player.number ? `#${player.number}` : null, showTeam ? player.teamName : null, player.nationality].filter(Boolean).join(' · ')}
         </span>
       </span>
-      <FollowButton player={player} />
+      <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <FollowButton player={player} />
+      </span>
     </div>
   )
 }

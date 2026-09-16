@@ -7,7 +7,8 @@ import { PlayerFace } from '../components/PlayerFace'
 import { teamByProviderId } from '../data/teams'
 import { openExternal } from '../native/external'
 import { fetchHeadlines, isForYou, type Headline } from '../services/news'
-import { fetchPlayerInjuries, fetchPlayerSeason, totals, type PlayerInjury, type PlayerSeason } from '../services/players'
+import { fetchCareer, fetchPlayerInjuries, fetchPlayerSeason, totals, type Career, type PlayerInjury, type PlayerSeason } from '../services/players'
+import { seasonGuess } from '../services/apiFootball'
 import { useAppState } from '../stores/AppState'
 
 function ago(iso: string | null): string {
@@ -34,6 +35,8 @@ export function Player() {
   const { players, week, subscribed, isPlayerFollowed, followPlayer, unfollowPlayer, hideScores } = useAppState()
   const known = players.find((p) => p.id === id)
   const [season, setSeason] = useState<PlayerSeason | null>(null)
+  const [seasonYear, setSeasonYear] = useState<number>(seasonGuess())
+  const [career, setCareer] = useState<Career | null>(null)
   const [injuries, setInjuries] = useState<PlayerInjury[]>([])
   const [news, setNews] = useState<Headline[] | null>(null)
   const [error, setError] = useState(false)
@@ -43,13 +46,27 @@ export function Player() {
     let cancelled = false
     setSeason(null)
     setError(false)
-    fetchPlayerSeason(id)
+    fetchPlayerSeason(id, seasonYear)
       .then((s) => {
         if (!cancelled) setSeason(s)
       })
       .catch(() => {
         if (!cancelled) setError(true)
       })
+    return () => {
+      cancelled = true
+    }
+  }, [id, seasonYear])
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    setCareer(null)
+    fetchCareer(id)
+      .then((c) => {
+        if (!cancelled) setCareer(c)
+      })
+      .catch(() => undefined)
     fetchPlayerInjuries(id)
       .then((list) => {
         if (!cancelled) setInjuries(list)
@@ -144,9 +161,21 @@ export function Player() {
         <div className="mono-label light player-hero-foot">{season ? `${season.season} season · club competitions` : error ? 'Season numbers unavailable' : 'Loading season numbers…'}</div>
       </article>
 
+      {career && career.seasons.length > 1 ? (
+        <div className="season-chips" role="tablist" aria-label="Season">
+          {career.seasons.map((y) => (
+            <button key={y} type="button" role="tab" aria-selected={seasonYear === y} className={`league-chip${seasonYear === y ? ' on' : ''}`} onClick={() => setSeasonYear(y)}>
+              {y}/{String(y + 1).slice(-2)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {season && season.rows.length === 0 ? <p className="disclaimer">No games recorded for the {seasonYear}/{String(seasonYear + 1).slice(-2)} season.</p> : null}
+
       {season && season.rows.length > 0 ? (
         <section className="card">
-          <h2 className="display-head">By competition</h2>
+          <h2 className="display-head">By competition · {season.season}/{String(season.season + 1).slice(-2)}</h2>
           <table className="standings player-table" aria-label="Season statistics by competition">
             <thead>
               <tr>
@@ -183,6 +212,36 @@ export function Player() {
               All competitions incl. national team: {all.apps} games, {all.goals} goals, {all.assists} assists. Shots on target {season.rows.reduce((n, r) => n + r.shotsOn, 0)}/{season.rows.reduce((n, r) => n + r.shots, 0)} · key passes{' '}
               {season.rows.reduce((n, r) => n + r.keyPasses, 0)} · dribbles {season.rows.reduce((n, r) => n + r.dribbles, 0)} · cards {season.rows.reduce((n, r) => n + r.yellow, 0)}Y {season.rows.reduce((n, r) => n + r.red, 0)}R.
             </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {career && career.clubs.length > 0 ? (
+        <section className="card">
+          <h2 className="display-head">Career</h2>
+          <ul className="career-list">
+            {career.clubs.map((c) => (
+              <li key={c.teamProviderId} className="career-row">
+                <span className="career-team">{c.team}</span>
+                <span className="career-years">
+                  {c.seasons.length > 1 ? `${c.seasons[c.seasons.length - 1]}–${c.seasons[0] === seasonGuess() ? 'now' : c.seasons[0] + 1}` : `${c.seasons[0]}/${String(c.seasons[0] + 1).slice(-2)}`}
+                  {' · '}
+                  {c.seasons.length} season{c.seasons.length === 1 ? '' : 's'}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {career.trophies.length > 0 ? (
+            <>
+              <div className="date-head">Honours</div>
+              {career.trophies.slice(0, 12).map((t, i) => (
+                <div key={`${t.competition}-${t.season}-${i}`} className="trophy-row">
+                  <span>{t.competition}</span>
+                  <span className="mono-label">{t.season}</span>
+                </div>
+              ))}
+              {career.trophies.length > 12 ? <p className="source-note">And {career.trophies.length - 12} more.</p> : null}
+            </>
           ) : null}
         </section>
       ) : null}

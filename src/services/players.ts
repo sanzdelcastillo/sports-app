@@ -205,3 +205,56 @@ export async function fetchPlayerInjuries(playerId: string, season = seasonGuess
   writeJson(key, { items, fetchedAt: new Date().toISOString() })
   return items
 }
+
+/* ---------- career ---------- */
+
+export interface CareerClub {
+  team: string
+  teamProviderId: string
+  logo?: string
+  seasons: number[]
+}
+
+export interface Trophy {
+  competition: string
+  country: string
+  season: string
+  place: string
+}
+
+export interface Career {
+  clubs: CareerClub[]
+  seasons: number[]
+  trophies: Trophy[]
+  fetchedAt: string
+}
+
+const CAREER_TTL_MS = 24 * 60 * 60 * 1000
+
+/** Clubs and national teams by season, the seasons with data, and honours. Cached a day. */
+export async function fetchCareer(playerId: string): Promise<Career> {
+  const key = `sfp.career.${playerId}`
+  const cached = readJson<Career | null>(key, null)
+  if (cached && Date.now() - new Date(cached.fetchedAt).getTime() < CAREER_TTL_MS) return cached
+  const [teams, seasons, trophies] = await Promise.all([
+    getJson<{ team: { id: number; name: string; logo?: string | null }; seasons: number[] }[]>(`${AF}/players/teams?player=${playerId}`),
+    getJson<number[]>(`${AF}/players/seasons?player=${playerId}`),
+    getJson<{ league: string | null; country: string | null; season: string | null; place: string | null }[]>(`${AF}/trophies?player=${playerId}`).catch(() => []),
+  ])
+  const career: Career = {
+    clubs: teams
+      .filter((t) => t.seasons.length > 0)
+      .map((t) => ({ team: t.team.name, teamProviderId: String(t.team.id), logo: t.team.logo ?? undefined, seasons: [...t.seasons].sort((a, b) => b - a) }))
+      .sort((a, b) => b.seasons[0] - a.seasons[0]),
+    seasons: [...seasons].sort((a, b) => b - a),
+    trophies: trophies
+      .filter((t) => /winner/i.test(t.place ?? ''))
+      // Pre-season silverware isn't an honour anyone brags about.
+      .filter((t) => !/emirates cup|florida cup|all-star|friendl|audi cup|champions cup international|international champions cup|premier league asia|joan gamper|gamper|super match|pre-season|preseason|summer series|dubai|marbella|eusébio|eusebio cup|teresa herrera|ramón de carranza|carranza|colombino|trofeo|trophy of|amsterdam tournament|invitational|uhrencup|telekom cup|mls all/i.test(t.league ?? ''))
+      .map((t) => ({ competition: t.league ?? 'Trophy', country: t.country ?? '', season: String(t.season ?? ''), place: t.place ?? 'Winner' }))
+      .sort((a, b) => b.season.localeCompare(a.season)),
+    fetchedAt: new Date().toISOString(),
+  }
+  writeJson(key, career)
+  return career
+}

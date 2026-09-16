@@ -7,7 +7,7 @@
 const UPSTREAM = 'https://v3.football.api-sports.io'
 
 // Only what the app uses; the key must not become a general relay.
-const ALLOW = new Set(['status', 'fixtures', 'fixtures/lineups', 'fixtures/events', 'fixtures/statistics', 'standings', 'teams', 'leagues', 'players', 'players/profiles', 'players/squads', 'injuries'])
+const ALLOW = new Set(['status', 'fixtures', 'fixtures/lineups', 'fixtures/events', 'fixtures/statistics', 'standings', 'teams', 'leagues', 'players', 'players/profiles', 'players/squads', 'players/teams', 'players/seasons', 'trophies', 'injuries'])
 
 /** Edge cache per endpoint. Live data stays short; catalogues sit for a day. */
 function cacheFor(path, query) {
@@ -18,7 +18,7 @@ function cacheFor(path, query) {
   if (path === 'standings') return 's-maxage=600, stale-while-revalidate=3600'
   if (path === 'teams' || path === 'leagues') return 's-maxage=86400, stale-while-revalidate=604800'
   if (path === 'players') return 's-maxage=21600, stale-while-revalidate=86400'
-  if (path === 'players/profiles' || path === 'players/squads') return 's-maxage=86400, stale-while-revalidate=604800'
+  if (path === 'players/profiles' || path === 'players/squads' || path === 'players/teams' || path === 'players/seasons' || path === 'trophies') return 's-maxage=86400, stale-while-revalidate=604800'
   if (path === 'injuries') return 's-maxage=3600, stale-while-revalidate=21600'
   return 's-maxage=60'
 }
