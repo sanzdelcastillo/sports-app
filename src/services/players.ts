@@ -326,13 +326,12 @@ export function sumCareer(seasons: PlayerSeason[]): Omit<CareerTotals, 'fetchedA
   let assistsSince: number | null = null
   for (const s of seasons) {
     if (s.rows.length === 0) continue
+    // Club friendlies don't count as career games; international friendlies are caps.
+    const counted = s.rows.filter((r) => r.isNationalTeam || !FRIENDLY.test(r.league))
+    if (counted.length === 0) continue
     since = since === null ? s.season : Math.min(since, s.season)
-    if (s.rows.some((r) => r.assistsKnown)) assistsSince = assistsSince === null ? s.season : Math.min(assistsSince, s.season)
-    for (const r of s.rows) {
-      // Club friendlies don't count as career games; international friendlies are caps.
-      if (!r.isNationalTeam && FRIENDLY.test(r.league)) continue
-      addRow(r.isNationalTeam ? country : club, r)
-    }
+    if (counted.some((r) => r.assistsKnown)) assistsSince = assistsSince === null ? s.season : Math.min(assistsSince, s.season)
+    for (const r of counted) addRow(r.isNationalTeam ? country : club, r)
   }
   return { club, country, since, assistsSince, seasonsCounted: seasons.filter((s) => s.rows.length > 0).length }
 }
