@@ -30,7 +30,8 @@ Working order. Each item moves to "Done" with the date when it ships.
 ## Later
 - [ ] Lock-screen Live Activities and home-screen widgets (native, Swift/Kotlin)
 - [ ] Accounts + sync across devices (replaces the setup code)
-- [ ] Player ratings, xG momentum, text commentary — only with a paid data tier once revenue justifies it
+- [ ] Complete career totals (provider misses Supercopa de España, some Copa del Rey / Leagues Cup seasons); needs a fuller data source — Opta/Stats Perform tier — or provider fixes. Reported to API-Football Sep 2026
+- [ ] xG momentum, text commentary — only with a paid data tier once revenue justifies it
 - [ ] Head-to-head and form on the game page
 - [ ] Spanish-language UI
 

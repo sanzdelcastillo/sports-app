@@ -263,7 +263,7 @@ export function Player() {
               <div className="career-headline">
                 <span className="career-headline-num">{(careerTotals.club.goals + careerTotals.country.goals).toLocaleString()}</span>
                 <span className="career-headline-label">
-                  career goals
+                  goals on record
                   <span className="career-headline-sub">
                     {(careerTotals.club.apps + careerTotals.country.apps).toLocaleString()} games · {(careerTotals.club.assists + careerTotals.country.assists).toLocaleString()} assists · club + country
                   </span>
@@ -274,7 +274,7 @@ export function Player() {
               <p className="source-note">
                 Since {careerTotals.since}, {careerTotals.seasonsCounted} seasons on record
                 {careerTotals.assistsSince && careerTotals.since !== null && careerTotals.assistsSince > careerTotals.since ? ` · assists counted from ${careerTotals.assistsSince}` : ''}. Competitive games only
-                (no club friendlies). Seasons before 2015 can miss the odd cup, so very long careers may run a few goals short of the official count.
+                (no club friendlies). Our data source is missing some cup competitions — Supercopa, some Copa del Rey and Leagues Cup seasons — so official career tallies can be higher than the number on record here.
               </p>
             </>
           ) : null}
