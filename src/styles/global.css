@@ -3074,12 +3074,14 @@ section[aria-label='Tables'] .league-chips {
    Tablet and desktop (iPad portrait is 768–834px wide; landscape 1024+)
    ===================================================================== */
 
+.top-nav {
+  display: none;
+}
+
 @media (min-width: 760px) {
   .app-shell {
-    width: min(1080px, 100%);
-    padding: 20px 32px calc(24px + var(--safe-b));
-    display: flex;
-    flex-direction: column;
+    width: min(1120px, 100%);
+    padding: 20px 32px 40px;
   }
 
   /* One column for reading pages, centered. */
@@ -3089,38 +3091,48 @@ section[aria-label='Tables'] .league-chips {
     margin-right: auto;
   }
 
-  /* The thumb bar becomes a top tab bar. */
+  /* Header: logo left, navigation right; the thumb bar goes away. */
   .bottom-nav {
-    position: sticky;
-    top: 0;
-    bottom: auto;
-    left: auto;
-    transform: none;
-    order: -1;
-    width: 100%;
-    height: 56px;
-    padding: 0;
-    margin: -20px 0 14px;
-    border-top: 0;
-    border-bottom: 1px solid var(--line);
-    grid-template-columns: repeat(5, minmax(0, 140px));
-    justify-content: flex-end;
-    background: var(--paper);
-  }
-
-  .bottom-nav .nav-item {
-    flex-direction: row;
-    gap: 8px;
-    font-size: 13px;
-  }
-
-  .bottom-nav .nav-item svg {
-    width: 18px;
-    height: 18px;
+    display: none;
   }
 
   .masthead {
-    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .top-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .top-nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: var(--r-control);
+    color: var(--ink-muted);
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .top-nav-item:hover {
+    color: var(--ink);
+    background: var(--paper-hi);
+  }
+
+  .top-nav-item.active {
+    color: var(--paper-hi);
+    background: var(--pitch-deep);
   }
 
   /* Hero: headline on the left, numbers on the right. */
@@ -3151,35 +3163,38 @@ section[aria-label='Tables'] .league-chips {
     font-size: 64px;
   }
 
-  /* The week in two columns; headings and strips span both. */
-  .route-wide section[aria-label='Live now'],
-  .route-wide section[aria-label='Next up'],
-  .route-wide .day-group {
+  /* The week: the list on the left, your clubs and players in a sidebar on the right. */
+  .week-body {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    column-gap: 28px;
     align-items: start;
   }
 
-  .route-wide section[aria-label='Live now'] > .date-head,
-  .route-wide section[aria-label='Next up'] > .date-head,
-  .route-wide .day-group > .date-head {
-    grid-column: 1 / -1;
+  .week-side {
+    order: 2;
+    position: sticky;
+    top: 16px;
   }
 
-  .route-wide section[aria-label='Next up'] .featured,
-  .route-wide section[aria-label='Live now'] .featured {
-    margin-bottom: 12px;
+  .week-main {
+    order: 1;
+    min-width: 0;
+  }
+
+  .week-side .club-strip {
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 8px;
+  }
+
+  .week-side .club-tile {
+    width: calc(50% - 4px);
   }
 
   .club-grid {
     grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
     gap: 10px;
-  }
-
-  .club-strip {
-    flex-wrap: wrap;
-    overflow: visible;
   }
 
   .search {
@@ -3196,7 +3211,7 @@ section[aria-label='Tables'] .league-chips {
     font-size: 72px;
   }
 
-  .route-wide section[aria-label='Live now'] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .week-body {
+    grid-template-columns: minmax(0, 1fr) 340px;
   }
 }

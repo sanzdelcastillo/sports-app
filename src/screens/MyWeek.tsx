@@ -221,6 +221,8 @@ export function MyWeek() {
         </section>
       ) : null}
 
+      <div className="week-body">
+      <aside className="week-side">
       {follows.length > 0 && week.fixtures.length > 0 ? (
         <section aria-label="Your clubs">
           <div className="date-head">You follow</div>
@@ -229,7 +231,9 @@ export function MyWeek() {
       ) : null}
 
       <PlayerStrip />
+      </aside>
 
+      <div className="week-main">
       {laterFixtures.length > 0 ? (
         <section aria-label="Catch up later">
           <div className="date-head">Catch up later — scores hidden</div>
@@ -357,7 +361,7 @@ export function MyWeek() {
                     Earlier this week
                   </div>
                   {recentGroups.map(([day, fixtures]) => (
-                    <section key={`re-${day}`}>
+                    <section key={`re-${day}`} className="day-group">
                       <div className="date-head">{day}</div>
                       {fixtures.map((fixture) => (
                         <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />
@@ -370,6 +374,9 @@ export function MyWeek() {
           )}
         </>
       )}
+
+      </div>
+      </div>
 
       <p className="lock-note">Never streams or embeds video. Buttons open the provider.</p>
     </div>
