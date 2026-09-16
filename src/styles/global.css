@@ -3069,3 +3069,134 @@ section[aria-label='Tables'] .league-chips {
   font-size: 11px;
   color: var(--ink-muted);
 }
+
+/* =====================================================================
+   Tablet and desktop (iPad portrait is 768–834px wide; landscape 1024+)
+   ===================================================================== */
+
+@media (min-width: 760px) {
+  .app-shell {
+    width: min(1080px, 100%);
+    padding: 20px 32px calc(24px + var(--safe-b));
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* One column for reading pages, centered. */
+  .app-shell.route-narrow > *:not(.bottom-nav) {
+    width: min(760px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* The thumb bar becomes a top tab bar. */
+  .bottom-nav {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    order: -1;
+    width: 100%;
+    height: 56px;
+    padding: 0;
+    margin: -20px 0 14px;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+    grid-template-columns: repeat(5, minmax(0, 140px));
+    justify-content: flex-end;
+    background: var(--paper);
+  }
+
+  .bottom-nav .nav-item {
+    flex-direction: row;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .bottom-nav .nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .masthead {
+    margin-top: 4px;
+  }
+
+  /* Hero: headline on the left, numbers on the right. */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  .hero > .hero-top,
+  .hero > .hero-title {
+    grid-column: 1;
+  }
+
+  .hero > .hero-stats,
+  .hero > .hero-gaps,
+  .hero > .hero-meta,
+  .hero > .hero-actions {
+    grid-column: 2;
+  }
+
+  .hero > .hero-stats {
+    margin-top: 0;
+  }
+
+  .hero-title {
+    font-size: 64px;
+  }
+
+  /* The week in two columns; headings and strips span both. */
+  .route-wide section[aria-label='Live now'],
+  .route-wide section[aria-label='Next up'],
+  .route-wide .day-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    align-items: start;
+  }
+
+  .route-wide section[aria-label='Live now'] > .date-head,
+  .route-wide section[aria-label='Next up'] > .date-head,
+  .route-wide .day-group > .date-head {
+    grid-column: 1 / -1;
+  }
+
+  .route-wide section[aria-label='Next up'] .featured,
+  .route-wide section[aria-label='Live now'] .featured {
+    margin-bottom: 12px;
+  }
+
+  .club-grid {
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 10px;
+  }
+
+  .club-strip {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .search {
+    max-width: 520px;
+  }
+
+  .featured-clock.live-clock .live-clock-text {
+    font-size: 30px;
+  }
+}
+
+@media (min-width: 1000px) {
+  .hero-title {
+    font-size: 72px;
+  }
+
+  .route-wide section[aria-label='Live now'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

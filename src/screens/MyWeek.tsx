@@ -315,7 +315,7 @@ export function MyWeek() {
                     <p className="disclaimer">No finished games for what you follow in the last {RESULTS_DAYS} days.</p>
                   ) : null}
                   {resultGroups.map(([day, fixtures]) => (
-                    <section key={`res-${day}`}>
+                    <section key={`res-${day}`} className="day-group">
                       <div className="date-head">{day}</div>
                       {fixtures.map((fixture) => (
                         <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />
@@ -344,7 +344,7 @@ export function MyWeek() {
                 </section>
               ) : null}
               {view === 'week' && upcomingGroups.map(([day, fixtures]) => (
-                <section key={`up-${day}`}>
+                <section key={`up-${day}`} className="day-group">
                   <div className="date-head">{day}</div>
                   {fixtures.map((fixture) => (
                     <GameRow key={fixture.id} fixture={fixture} subscribed={subscribed} />

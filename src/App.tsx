@@ -34,9 +34,11 @@ export default function App() {
   }
 
   const inWelcome = location.pathname === '/welcome'
+  // Wide screens: the week and the club picker use the full canvas; everything else reads best as one column.
+  const wide = location.pathname === '/' || location.pathname === '/clubs'
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${wide ? ' route-wide' : ' route-narrow'}`}>
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/" element={<MyWeek />} />
