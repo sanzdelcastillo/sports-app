@@ -37,6 +37,45 @@ function sectionAfter(text, heading) {
   return rest.slice(0, stop ? stop.index : undefined)
 }
 
+const RESERVE = /(^jong\s|\s(b|c|ii|iii|iv)$|\su-?\d+$|\sunder-\d+|reserves?|youth|castilla|atl[eè]tic$|\seds$|academy|amateurs?$|\sb\s?team|juvenil|primavera|\s2$)/i
+
+/** [{club, apps, goals}] from the club table: multi-season clubs have a "Total" row; single-season spells are one row. */
+export function clubTotals(clubSection) {
+  const cut = clubSection.lastIndexOf('Career total')
+  const table = clubSection.slice(0, cut === -1 ? undefined : cut)
+  const rows = table.split(/\n\|-[^\n]*/)
+  const out = []
+  let current = null
+  for (const row of rows) {
+    const lines = row.split('\n').map((l) => l.trim()).filter(Boolean)
+    if (!lines.length) continue
+    const first = lines[0]
+    if (/^!.*\bTotal\b/i.test(first)) {
+      if (current) {
+        const nums = ints(row.replace(/^[^\n]*?Total/, ''))
+        if (nums.length >= 2) out.push({ club: current, apps: nums[nums.length - 2], goals: nums[nums.length - 1], reserve: RESERVE.test(current) })
+      }
+      current = null
+      continue
+    }
+    const label = /^\|\s*(rowspan\s*=\s*"?(\d+)"?\s*\|)?\s*([^|\n]+?)\s*$/.exec(first)
+    if (!label) continue
+    const name = label[3]
+    const looksLikeClub = /[A-Za-zÀ-ÿ]/.test(name) && !/^\d{4}/.test(name) && !/^(Total|Career total)$/i.test(name)
+    if (!looksLikeClub) continue
+    const span = label[2] ? Number(label[2]) : 1
+    if (span > 1) {
+      current = name
+      continue
+    }
+    // One-season spell: this row carries its own totals (last two numbers).
+    const nums = ints(row.replace(first, ''))
+    if (nums.length >= 2) out.push({ club: name, apps: nums[nums.length - 2], goals: nums[nums.length - 1], reserve: RESERVE.test(name) })
+    current = null
+  }
+  return out
+}
+
 export function parseCareer(rawWikitext) {
   const text = strip(rawWikitext)
   const stats = sectionAfter(text, 'Career statistics')
@@ -44,10 +83,21 @@ export function parseCareer(rawWikitext) {
   const club = sectionAfter(stats, 'Club') || stats
   let clubApps = null
   let clubGoals = null
+  // Wikipedia's own "Career total" minus reserve and youth sides: official career counts start at the first team.
+  // (Summing club rows instead would double-count loan spells that are listed separately and folded into a club total.)
+  const perClub = clubTotals(club)
   const careerTotal = club.lastIndexOf('Career total')
   if (careerTotal !== -1) {
     const nums = rowNumbers(club, careerTotal)
-    if (nums.length >= 2) [clubApps, clubGoals] = nums.slice(-2)
+    if (nums.length >= 2) {
+      const reserve = perClub.filter((c) => c.reserve)
+      clubApps = nums[nums.length - 2] - reserve.reduce((n, c) => n + c.apps, 0)
+      clubGoals = nums[nums.length - 1] - reserve.reduce((n, c) => n + c.goals, 0)
+    }
+  } else if (perClub.length) {
+    const senior = perClub.filter((c) => !c.reserve)
+    clubApps = senior.reduce((n, c) => n + c.apps, 0)
+    clubGoals = senior.reduce((n, c) => n + c.goals, 0)
   }
   let intlApps = null
   let intlGoals = null
