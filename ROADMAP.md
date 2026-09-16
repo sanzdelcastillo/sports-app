@@ -30,7 +30,8 @@ Working order. Each item moves to "Done" with the date when it ships.
 ## Later
 - [ ] Lock-screen Live Activities and home-screen widgets (native, Swift/Kotlin)
 - [ ] Accounts + sync across devices (replaces the setup code)
-- [ ] xG momentum, text commentary — only with a paid data tier once revenue justifies it
+- [ ] Full-history player statistics (career assists, minutes, cards, penalties; deeper pre-2015 seasons) — needs Opta/Stats Perform or Sportradar, a contract at four figures a month; do it once there are paying users. Until then the career card shows only games and goals (Wikipedia) and per-season detail from 2015
+- [ ] xG momentum, text commentary — same paid data tier
 - [ ] Head-to-head and form on the game page
 - [ ] Spanish-language UI
 

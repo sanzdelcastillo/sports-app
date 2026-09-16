@@ -30,12 +30,12 @@ export function playerKeywords(name: string, fullName?: string): string[] {
   return [...new Set(words)]
 }
 
-function CareerBlock({ label, side, keeper, caps = false }: { label: string; side: CareerTotals['club']; keeper: boolean; caps?: boolean }) {
+function CareerBlock({ label, side, keeper, caps = false }: { label: string; side: { apps: number; goals: number }; keeper: boolean; caps?: boolean }) {
   const perGame = side.apps > 0 ? (side.goals / side.apps).toFixed(2) : '—'
   return (
     <div className="career-block">
       <div className="career-block-label mono-label">{label}</div>
-      <dl className="career-totals">
+      <dl className="career-totals three">
         <div>
           <dt>{caps ? 'Caps' : 'Games'}</dt>
           <dd>{side.apps.toLocaleString()}</dd>
@@ -44,19 +44,13 @@ function CareerBlock({ label, side, keeper, caps = false }: { label: string; sid
           <dt>Goals</dt>
           <dd>{side.goals.toLocaleString()}</dd>
         </div>
-        <div>
-          <dt>Assists</dt>
-          <dd>{side.assists.toLocaleString()}</dd>
-        </div>
-        <div>
-          <dt>{keeper ? 'Conceded' : 'Per game'}</dt>
-          <dd>{keeper ? side.conceded.toLocaleString() : perGame}</dd>
-        </div>
+        {!keeper ? (
+          <div>
+            <dt>Per game</dt>
+            <dd>{perGame}</dd>
+          </div>
+        ) : null}
       </dl>
-      <div className="career-fine mono-label">
-        {Math.round(side.minutes).toLocaleString()} min · pens {side.penScored}/{side.penScored + side.penMissed} · {side.yellow}Y {side.red}R
-        {keeper ? ` · ${side.saves.toLocaleString()} saves` : ''}
-      </div>
     </div>
   )
 }
@@ -285,8 +279,8 @@ export function Player() {
                 const clubApps = w?.clubApps ?? careerTotals.club.apps
                 const intlGoals = w?.intlGoals ?? careerTotals.country.goals
                 const intlApps = w?.intlApps ?? careerTotals.country.apps
-                const clubSide = { ...careerTotals.club, goals: clubGoals, apps: clubApps }
-                const countrySide = { ...careerTotals.country, goals: intlGoals, apps: intlApps }
+                const clubSide = { goals: clubGoals, apps: clubApps }
+                const countrySide = { goals: intlGoals, apps: intlApps }
                 const updated = w?.clubUpdated?.replace(/^\d{1,2}:\d{2}, /, '').replace(/ \(UTC\)$/, '')
                 return (
                   <>
@@ -303,14 +297,9 @@ export function Player() {
                     {countrySide.apps > 0 ? <CareerBlock label="National team" side={countrySide} keeper={isKeeper} caps /> : null}
                     <p className="source-note">
                       {w ? (
-                        <>
-                          Games and goals: Wikipedia{updated ? `, updated ${updated}` : ''} — every competition, senior national team only. Assists, minutes, penalties and cards from our match data since{' '}
-                          {careerTotals.assistsSince ?? careerTotals.since}.
-                        </>
+                        <>Games and goals: Wikipedia{updated ? `, updated ${updated}` : ''} — every competition, senior national team only.</>
                       ) : (
-                        <>
-                          From our match data since {careerTotals.since} ({careerTotals.seasonsCounted} seasons), competitive games only. Official tallies can run higher where older cups are missing.
-                        </>
+                        <>From our match data since {careerTotals.since} ({careerTotals.seasonsCounted} seasons), competitive games only.</>
                       )}
                     </p>
                   </>

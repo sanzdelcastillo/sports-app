@@ -3215,3 +3215,7 @@ section[aria-label='Tables'] .league-chips {
     grid-template-columns: minmax(0, 1fr) 340px;
   }
 }
+
+.career-totals.three {
+  grid-template-columns: repeat(3, 1fr);
+}
