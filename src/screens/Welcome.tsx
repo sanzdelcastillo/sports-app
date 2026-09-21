@@ -34,7 +34,7 @@ export function Welcome() {
         <>
           <h1 className="page-title">Who do you follow?</h1>
           <p className="disclaimer">
-            Clubs, or whole competitions under the first tab — pick as many as you like. Your week is built from these:
+            Clubs, national teams, or whole competitions under the first tab — pick as many as you like. Your week is built from these:
             every game, in your time zone, with where to watch it in the U.S.
           </p>
           <ClubPicker />

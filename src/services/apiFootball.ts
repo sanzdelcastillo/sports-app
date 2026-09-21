@@ -263,6 +263,22 @@ export async function fetchLeagueTeams(league: League): Promise<Team[]> {
   return rows.map((r) => teamFromProvider({ ...r.team, venue: r.venue?.name ?? null }, league.id))
 }
 
+/** National teams from the big tournaments' entry lists (World Cup, UEFA Nations League, Copa América, Gold Cup), de-duplicated. */
+export async function fetchNationalTeams(): Promise<Team[]> {
+  const sources = ['league=1&season=2026', 'league=5&season=2026', 'league=9&season=2024', 'league=22&season=2025']
+  const lists = await Promise.all(
+    sources.map((s) => getJson<(AfTeamEntry & { team: { national?: boolean } })[]>(`${AF}/teams?${s}`).catch(() => [])),
+  )
+  const seen = new Set<number>()
+  const out: Team[] = []
+  for (const r of lists.flat()) {
+    if (!r?.team?.id || r.team.national === false || seen.has(r.team.id)) continue
+    seen.add(r.team.id)
+    out.push(teamFromProvider({ ...r.team, venue: r.venue?.name ?? null }, 'national'))
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export async function searchTeams(query: string): Promise<Team[]> {
   const q = query.trim()
   if (q.length < 3) return []

@@ -2,7 +2,7 @@ import { getLeague, restoreLeagues } from '../data/leagues'
 import { registerTeams, restoreRegistry, teamByProviderId } from '../data/teams'
 import type { LeagueId, Team } from '../domain/types'
 import { readJson, writeJson } from '../lib/storage'
-import { fetchLeagueTeams, searchTeams as providerSearch } from './apiFootball'
+import { fetchLeagueTeams, fetchNationalTeams, searchTeams as providerSearch } from './apiFootball'
 
 const CATALOGUE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const CUSTOM_KEY = 'sfp.customTeams.v1'
@@ -26,6 +26,20 @@ export async function loadLeagueClubs(leagueId: LeagueId): Promise<Team[]> {
     return cached.teams
   }
   const teams = await fetchLeagueTeams(league)
+  if (teams.length === 0) return cached?.teams ?? []
+  writeJson<Catalogue>(key, { teams, fetchedAt: new Date().toISOString() })
+  return teams
+}
+
+/** National teams (about a hundred), from the device cache when fresh, otherwise the provider. */
+export async function loadNationalTeams(): Promise<Team[]> {
+  const key = 'sfp.clubs.national.v1'
+  const cached = readJson<Catalogue | null>(key, null)
+  if (cached && cached.teams.length && Date.now() - new Date(cached.fetchedAt).getTime() < CATALOGUE_TTL_MS) {
+    registerTeams(cached.teams)
+    return cached.teams
+  }
+  const teams = await fetchNationalTeams()
   if (teams.length === 0) return cached?.teams ?? []
   writeJson<Catalogue>(key, { teams, fetchedAt: new Date().toISOString() })
   return teams

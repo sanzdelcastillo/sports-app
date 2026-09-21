@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { FOLLOWABLE_COMPETITIONS, getLeague, leagueFollowId, leagueIdFromFollow } from '../data/leagues'
 import { followableTeams, getTeam, registryVersion } from '../data/teams'
 import type { LeagueId, Team } from '../domain/types'
-import { BROWSABLE_LEAGUES, loadLeagueClubs, searchClubs } from '../services/clubs'
+import { BROWSABLE_LEAGUES, loadLeagueClubs, loadNationalTeams, searchClubs } from '../services/clubs'
 import { leagueForEntry, loadLeagueDirectory, popularLeagues, searchLeagues, type DirectoryEntry } from '../services/leagues'
 import { useAppState } from '../stores/AppState'
+import { LeagueTableView } from './MatchExtras'
 import { PlayerPicker } from './PlayerPicker'
 import { TeamCrest } from './TeamCrest'
 
@@ -14,13 +15,20 @@ import { TeamCrest } from './TeamCrest'
  */
 export function ClubPicker({ compact = false }: { compact?: boolean }) {
   const { follows, followSet, toggleFollow } = useAppState()
-  const [league, setLeague] = useState<LeagueId | 'competitions' | 'leagues' | 'players'>('epl')
+  const [league, setLeague] = useState<LeagueId | 'competitions' | 'leagues' | 'players' | 'national'>('epl')
   const [directory, setDirectory] = useState<DirectoryEntry[] | null>(null)
   const [leagueQuery, setLeagueQuery] = useState('')
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const [tick, setTick] = useState(registryVersion())
   const [status, setStatus] = useState<'idle' | 'loading' | 'partial'>('idle')
+  const [view, setView] = useState<'clubs' | 'table'>('clubs')
+  const openLeague = (id: typeof league, v: 'clubs' | 'table' = 'clubs') => {
+    setLeague(id)
+    setView(v)
+  }
+  const isLeague = league !== 'competitions' && league !== 'leagues' && league !== 'players' && league !== 'national'
+  const [nationals, setNationals] = useState<Team[]>([])
   const [remote, setRemote] = useState<{ q: string; teams: Team[] } | null>(null)
 
   useEffect(() => {
@@ -35,7 +43,26 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
   }, [league, directory, q])
 
   useEffect(() => {
-    if (league === 'competitions' || league === 'leagues' || league === 'players') return
+    if (league !== 'national') return
+    let cancelled = false
+    setStatus('loading')
+    loadNationalTeams()
+      .then((teams) => {
+        if (cancelled) return
+        setNationals(teams)
+        setStatus(teams.length ? 'idle' : 'partial')
+        setTick(registryVersion())
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('partial')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [league])
+
+  useEffect(() => {
+    if (league === 'competitions' || league === 'leagues' || league === 'players' || league === 'national') return
     let cancelled = false
     setStatus('loading')
     loadLeagueClubs(league)
@@ -78,11 +105,12 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
   const clubs = useMemo(() => {
     void tick
     const all = followableTeams()
+    if (league === 'national' && !q) return nationals
     const pool = q || league === 'competitions' || league === 'leagues' || league === 'players' ? all : all.filter((t) => t.leagueId === league)
     const local = pool.filter((t) => !q || t.name.toLowerCase().includes(q) || t.shortName.toLowerCase().includes(q))
     const extra = remote && remote.q === q ? remote.teams.filter((t) => !local.some((l) => l.id === t.id)) : []
     return [...local, ...extra].sort((a, b) => a.name.localeCompare(b.name))
-  }, [league, q, tick, remote])
+  }, [league, q, tick, remote, nationals])
 
   const followed = useMemo(
     () => follows.map((id) => getTeam(id)).filter((t): t is Team => Boolean(t)),
@@ -131,7 +159,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
       <input
         className="search"
         type="search"
-        placeholder="Search any club or league"
+        placeholder="Search any club, country or league"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search clubs"
@@ -144,7 +172,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
             role="tab"
             aria-selected={league === 'competitions'}
             className={`league-chip${league === 'competitions' ? ' on' : ''}`}
-            onClick={() => setLeague('competitions')}
+            onClick={() => openLeague('competitions')}
           >
             Competitions
           </button>
@@ -153,9 +181,18 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
             role="tab"
             aria-selected={league === 'players'}
             className={`league-chip${league === 'players' ? ' on' : ''}`}
-            onClick={() => setLeague('players')}
+            onClick={() => openLeague('players')}
           >
             Players
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={league === 'national'}
+            className={`league-chip${league === 'national' ? ' on' : ''}`}
+            onClick={() => openLeague('national')}
+          >
+            National teams
           </button>
           {BROWSABLE_LEAGUES.map((id) => (
             <button
@@ -164,12 +201,12 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
               role="tab"
               aria-selected={league === id}
               className={`league-chip${league === id ? ' on' : ''}`}
-              onClick={() => setLeague(id)}
+              onClick={() => openLeague(id)}
             >
               {getLeague(id).shortName}
             </button>
           ))}
-          {league !== 'competitions' && league !== 'leagues' && league !== 'players' && !BROWSABLE_LEAGUES.includes(league) ? (
+          {league !== 'competitions' && league !== 'leagues' && league !== 'players' && league !== 'national' && !BROWSABLE_LEAGUES.includes(league) ? (
             <button type="button" role="tab" aria-selected className="league-chip on">
               {getLeague(league).shortName}
             </button>
@@ -179,7 +216,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
             role="tab"
             aria-selected={league === 'leagues'}
             className={`league-chip${league === 'leagues' ? ' on' : ''}`}
-            onClick={() => setLeague('leagues')}
+            onClick={() => openLeague('leagues')}
           >
             All leagues
           </button>
@@ -196,17 +233,18 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
                 {group.ids.map((id) => {
                   const on = followSet.has(leagueFollowId(id))
                   return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={`card comp-row${on ? ' on' : ''}`}
-                      aria-pressed={on}
-                      onClick={() => toggleFollow(leagueFollowId(id))}
-                    >
+                    <div key={id} className={`card comp-row static${on ? ' on' : ''}`}>
                       <span className="comp-swatch" style={{ background: getLeague(id).accent }} aria-hidden="true" />
                       <span className="comp-name">{getLeague(id).name}</span>
-                      <span className={`toggle${on ? ' on' : ''}`}>{on ? 'Following' : 'Follow'}</span>
-                    </button>
+                      <span className="league-actions">
+                        <button type="button" className="text-btn" onClick={() => openLeague(id, 'table')}>
+                          Table ›
+                        </button>
+                        <button type="button" className={`toggle${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleFollow(leagueFollowId(id))}>
+                          {on ? 'Following' : 'Follow'}
+                        </button>
+                      </span>
+                    </div>
                   )
                 })}
               </div>
@@ -244,7 +282,10 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
                         {entry.country && entry.country !== 'World' ? <span className="comp-country">{entry.country}</span> : null}
                       </span>
                       <span className="league-actions">
-                        <button type="button" className="text-btn" onClick={() => setLeague(l.id)}>
+                        <button type="button" className="text-btn" onClick={() => openLeague(l.id, 'table')}>
+                          Table ›
+                        </button>
+                        <button type="button" className="text-btn" onClick={() => openLeague(l.id)}>
                           Clubs ›
                         </button>
                         <button type="button" className={`toggle${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleFollow(followId)}>
@@ -264,7 +305,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
         </div>
       ) : null}
 
-      {status === 'loading' && clubs.length === 0 && league !== 'competitions' && league !== 'leagues' && league !== 'players' ? <p className="disclaimer">Loading clubs…</p> : null}
+      {status === 'loading' && clubs.length === 0 && league !== 'competitions' && league !== 'leagues' && league !== 'players' ? <p className="disclaimer">{league === 'national' ? 'Loading national teams…' : 'Loading clubs…'}</p> : null}
       {status === 'partial' && !q ? (
         <p className="disclaimer">Showing the clubs we have on device. The full league list needs a connection.</p>
       ) : null}
@@ -293,7 +334,17 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
                           className="text-btn"
                           onClick={() => {
                             setQuery('')
-                            setLeague(l.id)
+                            openLeague(l.id, 'table')
+                          }}
+                        >
+                          Table ›
+                        </button>
+                        <button
+                          type="button"
+                          className="text-btn"
+                          onClick={() => {
+                            setQuery('')
+                            openLeague(l.id)
                           }}
                         >
                           Clubs ›
@@ -312,7 +363,20 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
         })()
       ) : null}
 
-      <div className={`club-grid${compact ? ' compact' : ''}`} hidden={(league === 'competitions' || league === 'leagues' || league === 'players') && !q}>
+      {isLeague && !q ? <div className="date-head">{getLeague(league).name}</div> : null}
+      {isLeague && !q ? (
+        <div className="view-toggle picker-view" role="tablist" aria-label={`${getLeague(league).name}: clubs or table`}>
+          <button type="button" role="tab" aria-selected={view === 'clubs'} className={`view-tab${view === 'clubs' ? ' on' : ''}`} onClick={() => setView('clubs')}>
+            Clubs
+          </button>
+          <button type="button" role="tab" aria-selected={view === 'table'} className={`view-tab${view === 'table' ? ' on' : ''}`} onClick={() => setView('table')}>
+            Table
+          </button>
+        </div>
+      ) : null}
+      {isLeague && !q && view === 'table' ? <LeagueTableView leagueId={league} /> : null}
+
+      <div className={`club-grid${compact ? ' compact' : ''}`} hidden={((league === 'competitions' || league === 'leagues' || league === 'players') && !q) || (isLeague && !q && view === 'table')}>
         {clubs.map((team) => {
           const on = followSet.has(team.id)
           return (
@@ -330,7 +394,7 @@ export function ClubPicker({ compact = false }: { compact?: boolean }) {
           )
         })}
       </div>
-      {clubs.length === 0 && status !== 'loading' && (q || (league !== 'competitions' && league !== 'leagues' && league !== 'players')) ? (
+      {clubs.length === 0 && status !== 'loading' && (q || (league !== 'competitions' && league !== 'leagues' && league !== 'players' && view !== 'table')) ? (
         <p className="disclaimer">No club matches that search.</p>
       ) : null}
     </div>

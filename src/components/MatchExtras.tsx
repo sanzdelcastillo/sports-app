@@ -179,6 +179,15 @@ function PlayerLine({ player }: { player: LineupPlayer }) {
   )
 }
 
+/** True when a kit colour is light enough that white shirt numbers would disappear on it. */
+function isLightColor(color: string): boolean {
+  const hex = color.trim().replace('#', '')
+  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return false
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16))
+  return (r * 299 + g * 587 + b * 114) / 1000 > 165
+}
+
 /** The eleven on a pitch: one row per line of the formation, goalkeeper at the bottom, mirrored for the away side. */
 function Pitch({ lineup, away, color }: { lineup: TeamLineup; away: boolean; color: string }) {
   const rows = new Map<number, LineupPlayer[]>()
@@ -199,7 +208,7 @@ function Pitch({ lineup, away, color }: { lineup: TeamLineup; away: boolean; col
             .sort((a, b) => (a.col ?? 0) - (b.col ?? 0))
             .map((p) => (
               <span key={p.id} className="pitch-player">
-                <span className="pitch-shirt" style={{ background: color }}>
+                <span className={`pitch-shirt${isLightColor(color) ? ' light' : ''}`} style={{ background: color }}>
                   {p.number ?? ''}
                 </span>
                 <span className="pitch-name">{p.name.split(' ').slice(-1)[0]}</span>
@@ -489,6 +498,43 @@ export function StandingsTable({ rows, highlight, season, gaps = false, showForm
 }
 
 /* ---------- Tables for everything you follow ---------- */
+
+/** One competition's table on its own — used on Following, outside any game. */
+export function LeagueTableView({ leagueId }: { leagueId: LeagueId }) {
+  const { follows } = useAppState()
+  const [state, setState] = useState<{ league: LeagueId; table: LeagueTable | null; error?: boolean } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchStandings(leagueId)
+      .then((table) => {
+        if (!cancelled) setState({ league: leagueId, table })
+      })
+      .catch(() => {
+        if (!cancelled) setState({ league: leagueId, table: null, error: true })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [leagueId])
+
+  const mine = useMemo(() => new Set(follows.map((id) => getTeam(id)?.providerId)), [follows])
+  const loading = !state || state.league !== leagueId
+  const table = loading ? null : state.table
+  const name = getLeague(leagueId).name
+
+  if (loading) return <p className="disclaimer">Loading the table…</p>
+  if (state?.error) return <p className="disclaimer">The table is unavailable right now.</p>
+  if (!table || table.rows.length === 0) {
+    return <p className="disclaimer">{name} has no table — it's a knockout competition, or the league phase hasn't started.</p>
+  }
+  return (
+    <section aria-label={`${name} table`}>
+      <StandingsTable rows={table.rows} highlight={mine} season={table.season} showForm />
+      <p className="source-note">{name} · {table.season} season{mine.size ? ' · your clubs highlighted' : ''}.</p>
+    </section>
+  )
+}
 
 function leaguesYouFollow(follows: string[]): LeagueId[] {
   const ids: LeagueId[] = []

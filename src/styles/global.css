@@ -1608,13 +1608,15 @@ h3 {
   gap: 10px;
 }
 
-@media (min-width: 440px) {
+/* Side by side only where each pitch has room for a line of five; phones stack. */
+@media (min-width: 760px) {
   .lineup-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 .lineup-side {
+  min-width: 0;
   background: var(--paper-hi);
   border: 1px solid var(--line);
   border-radius: var(--r-card);
@@ -2409,7 +2411,8 @@ section[aria-label='Live now'] .card-featured {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: 56px;
+  flex: 0 1 56px;
+  min-width: 0;
 }
 
 .pitch-shirt {
@@ -2425,6 +2428,13 @@ section[aria-label='Live now'] .card-featured {
   font-weight: 700;
   font-size: 13px;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+/* Light kits (white, yellow, sky): dark numbers, no shadow, a darker ring so the shirt reads on the grass. */
+.pitch-shirt.light {
+  color: #121813;
+  text-shadow: none;
+  border-color: rgba(18, 24, 19, 0.55);
 }
 
 .pitch-name {
@@ -2638,6 +2648,12 @@ section[aria-label='Next up'] .featured .badge.owned {
   border: 1px solid var(--line);
   border-radius: var(--r-control);
   background: var(--paper-hi);
+}
+
+/* Clubs / Table switch on Following: two columns, tighter than the My Week bar. */
+.view-toggle.picker-view {
+  grid-template-columns: 1fr 1fr;
+  margin: 10px 0 12px;
 }
 
 .view-tab {
